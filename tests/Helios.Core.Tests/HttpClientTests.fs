@@ -51,10 +51,10 @@ let ``Post should return deserialized object when response is successful`` () =
     let data = {| Name = "test" |}
 
     // Act
-    let response = (httpClient.Post url data |> Async.RunSynchronously) |> unwrap
+    let response = httpClient.Post url data
 
     // Assert
-    let responseBody = HttpClient.ParseBody response |> Async.RunSynchronously
+    let responseBody = HttpClient.ParseBody response |> unwrap
     Assert.Equal(expected, responseBody)
     let cookie = HttpClient.ParseCookie "XSRF-TOKEN" response
     Assert.Equal("123456789", cookie.Value)
@@ -79,7 +79,7 @@ let ``Post should throw HttpRequestException when response status code is 400`` 
     let httpClient: IHttpClient = new HttpClient(handlerMock.Object)
 
     // Assert
-    match httpClient.Post "http://test.com/" {| Name = "test" |} |> Async.RunSynchronously with
+    match httpClient.Post "http://test.com/" {| Name = "test" |} with
     | Ok _ -> Assert.True(false, "Expected exception")
     | Error err ->
         let actualException = Assert.IsType<HttpRequestException>(err)

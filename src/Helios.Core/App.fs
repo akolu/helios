@@ -1,10 +1,15 @@
-namespace Helios
+namespace Helios.Core
 
-type Config =
-    { userName: string; systemCode: string }
+module Main =
+    type App =
+        { userName: string
+          systemCode: string }
 
-type App(config: Config) =
+        static member Init config =
+            { userName = config.userName
+              systemCode = config.systemCode }
 
-    member private this.fusionSolarApiToken = None
+    let import (csv: string) (app: App) = printfn "Importing %s... (stub)" csv
 
-    member this.hello name = printfn "Hello %s" name
+    let generateReport (startDate, endDate) (app: App) =
+        printfn "Generating report from %s to %s... (stub)" startDate endDate

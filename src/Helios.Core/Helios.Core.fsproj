@@ -6,9 +6,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Utils.fs" />
     <Compile Include="Services/HttpClient.fs" />
     <Compile Include="Services/FusionSolar.fs" />
-    <Compile Include="Utils.fs" />
     <Compile Include="App.fs" />
   </ItemGroup>
 

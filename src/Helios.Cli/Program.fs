@@ -1,9 +1,14 @@
-﻿open Helios
+﻿open Helios.Core.Main
 
-let app =
-    new App(
-        { userName = "test"
-          systemCode = "test" }
-    )
+let config =
+    { userName = "user"
+      systemCode = "code" }
 
-app.hello "world"
+let csv = "data.csv"
+
+let fromDate = "2020-01-01"
+let toDate = "2020-01-31"
+
+App.Init config |> import csv
+
+App.Init config |> generateReport (fromDate, toDate)
