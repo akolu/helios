@@ -1,0 +1,43 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{84319487-A019-42BD-A165-BB3657ACBA89}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Helios.Cli", "src\Helios.Cli\Helios.Cli.fsproj", "{1184B82D-9BA8-426C-8406-54B131079EAE}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Helios.Core", "src\Helios.Core\Helios.Core.fsproj", "{77B45780-28AF-4903-824E-EB1B5B5ED43B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{311AD2A1-38D8-44DE-BA74-1EC05E149AA9}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Helios.Core.Tests", "tests\Helios.Core.Tests\Helios.Core.Tests.fsproj", "{9FEC6629-40A0-45CD-A1C1-53B0CD7C1510}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1184B82D-9BA8-426C-8406-54B131079EAE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1184B82D-9BA8-426C-8406-54B131079EAE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1184B82D-9BA8-426C-8406-54B131079EAE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1184B82D-9BA8-426C-8406-54B131079EAE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{77B45780-28AF-4903-824E-EB1B5B5ED43B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{77B45780-28AF-4903-824E-EB1B5B5ED43B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{77B45780-28AF-4903-824E-EB1B5B5ED43B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{77B45780-28AF-4903-824E-EB1B5B5ED43B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9FEC6629-40A0-45CD-A1C1-53B0CD7C1510}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9FEC6629-40A0-45CD-A1C1-53B0CD7C1510}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9FEC6629-40A0-45CD-A1C1-53B0CD7C1510}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9FEC6629-40A0-45CD-A1C1-53B0CD7C1510}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{1184B82D-9BA8-426C-8406-54B131079EAE} = {84319487-A019-42BD-A165-BB3657ACBA89}
+		{77B45780-28AF-4903-824E-EB1B5B5ED43B} = {84319487-A019-42BD-A165-BB3657ACBA89}
+		{9FEC6629-40A0-45CD-A1C1-53B0CD7C1510} = {311AD2A1-38D8-44DE-BA74-1EC05E149AA9}
+	EndGlobalSection
+EndGlobal
