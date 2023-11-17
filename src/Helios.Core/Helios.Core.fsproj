@@ -7,7 +7,7 @@
 
   <ItemGroup>
     <Compile Include="Utils.fs" />
-    <Compile Include="Services/HttpClient.fs" />
+    <Compile Include="Services/HttpHandler.fs" />
     <Compile Include="Services/FusionSolar.fs" />
     <Compile Include="App.fs" />
   </ItemGroup>
