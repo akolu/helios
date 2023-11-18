@@ -15,7 +15,7 @@ open Helios.Utils
 let TEST_URL = "http://test.com/"
 
 let setupHandlerMock (response: HttpResponseMessage) =
-    let handlerMock = new Mock<HttpMessageHandler>(MockBehavior.Strict)
+    let handlerMock = new Mock<HttpClientHandler>(MockBehavior.Strict)
 
     handlerMock
         .Protected()

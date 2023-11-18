@@ -4,6 +4,8 @@ open System.Text
 open System.Net.Http
 open Newtonsoft.Json
 open System.Threading.Tasks
+open System.Net
+open System
 
 module HttpUtils =
 
@@ -37,12 +39,14 @@ module HttpUtils =
 type IHttpHandler =
     abstract member Get: string -> Result<HttpResponseMessage, HttpRequestException>
     abstract member Post: string * StringContent -> Result<HttpResponseMessage, HttpRequestException>
+    abstract member SetCookie: string * string * string -> unit
 
-type HttpHandler(?httpMessageHandler: HttpMessageHandler) =
+type HttpHandler(?httpMessageHandler: HttpClientHandler) =
+    let handler = defaultArg httpMessageHandler (new HttpClientHandler())
 
     let doRequest (requestFunc: HttpClient -> string -> Task<HttpResponseMessage>) url =
         async {
-            use client = new HttpClient(defaultArg httpMessageHandler (new HttpClientHandler()))
+            use client = new HttpClient(handler)
             let! response = requestFunc client url |> Async.AwaitTask
 
             if not response.IsSuccessStatusCode then
@@ -58,3 +62,10 @@ type HttpHandler(?httpMessageHandler: HttpMessageHandler) =
 
         member _.Post(url, content) =
             doRequest (fun client url -> client.PostAsync(url, content)) url
+
+        member _.SetCookie(url, key, value) =
+            if handler.CookieContainer = null then
+                handler.UseCookies <- true
+                handler.CookieContainer <- new CookieContainer()
+
+            handler.CookieContainer.Add(new Uri(url), new Cookie(key, value))
