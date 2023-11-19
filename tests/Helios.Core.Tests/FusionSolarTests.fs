@@ -7,9 +7,23 @@ open System.Net.Http
 open System.Net
 open System.Text
 open Newtonsoft.Json
+open Helios.Core.Logger
+open FusionSolar.Types
 
 module internal DataMocks =
-    let GetStationsResponse: FusionSolar.Types.GetStations.GetStationsResponse =
+    let LoginSuccessResponse: Login.LoginResponse =
+        { success = true
+          failCode = 0
+          ``params`` = {| currentTime = 1L |}
+          message = None }
+
+    let LoginFailureResponse: Login.LoginResponse =
+        { success = false
+          failCode = 1
+          ``params`` = {| currentTime = 1L |}
+          message = Some "login failure" }
+
+    let GetStationsResponse: GetStations.GetStationsResponse =
         { success = true
           failCode = 0
           message = None
@@ -32,13 +46,19 @@ module internal DataMocks =
 module internal ResponseMocks =
     let LoginSuccess =
         let response =
-            new HttpResponseMessage(HttpStatusCode.OK, Content = new StringContent("login success", Encoding.UTF8))
+            new HttpResponseMessage(
+                HttpStatusCode.OK,
+                Content = new StringContent(JsonConvert.SerializeObject(DataMocks.LoginSuccessResponse), Encoding.UTF8)
+            )
 
         response.Headers.Add("Set-Cookie", "XSRF-TOKEN=mockXsrfToken; path=/; secure; HttpOnly")
         response
 
     let LoginFailureNoCookie =
-        new HttpResponseMessage(HttpStatusCode.OK, Content = new StringContent("login failure", Encoding.UTF8))
+        new HttpResponseMessage(
+            HttpStatusCode.OK,
+            Content = new StringContent(JsonConvert.SerializeObject(DataMocks.LoginFailureResponse), Encoding.UTF8)
+        )
 
     let LoginFailureHttpError = new HttpResponseMessage(HttpStatusCode.BadRequest)
 
@@ -48,6 +68,9 @@ module internal ResponseMocks =
             Content = new StringContent(JsonConvert.SerializeObject(DataMocks.GetStationsResponse), Encoding.UTF8)
         )
 
+type MockLogger() =
+    interface ILogger with
+        member _.LogJson(data: 'T) = ()
 
 let mockHttpClientWithResponse (responses: Map<string, Result<HttpResponseMessage, HttpRequestException>>) =
     let mock = new Mock<IHttpHandler>(MockBehavior.Strict)
@@ -66,6 +89,7 @@ let ``Init function should initialize record with config data & isLoggedIn to fa
     // Arrange
     let config: FusionSolar.Config =
         { httpClient = new HttpHandler()
+          logger = new MockLogger()
           userName = "testUser"
           systemCode = "testSystem" }
 
@@ -75,70 +99,6 @@ let ``Init function should initialize record with config data & isLoggedIn to fa
     // Assert
     Assert.Equal(false, result.isLoggedIn)
     Assert.Equal(config, result.config)
-
-
-// [<Fact>]
-// let ``Login function should return Ok with response payload and add xsrfToken to cookies`` () =
-//     // Arrange
-//     let mock = mockHttpClientWithResponse Mocks.LoginSuccess
-
-//     // Act
-//     let result =
-//         FusionSolar.login (
-//             FusionSolar.init
-//                 { httpClient = mock.Object
-//                   userName = "test"
-//                   systemCode = "user" }
-//         )
-
-//     // Assert
-//     match result with
-//     | Ok fs -> Assert.Equal("mockXsrfToken", fs.xsrfToken)
-//     | Error _ -> Assert.True(false, "Expected Ok, got Error")
-
-//     mock.Verify(fun x -> x.Post(It.IsAny<string>(), It.IsAny<StringContent>()))
-
-// [<Fact>]
-// let ``Login function should return error if xsrfToken is not found in response`` () =
-//     // Arrange
-//     let mock = mockHttpClientWithResponse Mocks.LoginFailureNoCookie
-
-//     // Act
-//     let result =
-//         FusionSolar.login (
-//             FusionSolar.init
-//                 { httpClient = mock.Object
-//                   userName = "test"
-//                   systemCode = "user" }
-//         )
-
-//     // Assert
-//     match result with
-//     | Ok _ -> Assert.True(false, "Expected Error, got Ok")
-//     | Error _ -> Assert.True(true)
-
-//     mock.Verify(fun x -> x.Post(It.IsAny<string>(), It.IsAny<StringContent>()))
-
-// [<Fact>]
-// let ``Login function should return error if httpRequest returns error`` () =
-//     // Arrange
-//     let mock = mockHttpClientWithResponse Mocks.LoginFailureHttpError
-
-//     // Act
-//     let result =
-//         FusionSolar.login (
-//             FusionSolar.init
-//                 { httpClient = mock.Object
-//                   userName = "test"
-//                   systemCode = "user" }
-//         )
-
-//     // Assert
-//     match result with
-//     | Ok _ -> Assert.True(false, "Expected Error, got Ok")
-//     | Error _ -> Assert.True(true)
-
-//     mock.Verify(fun x -> x.Post(It.IsAny<string>(), It.IsAny<StringContent>()))
 
 [<Fact>]
 let ``getStations should call login first if isLoggedIn is false`` () =
@@ -160,8 +120,35 @@ let ``getStations should call login first if isLoggedIn is false`` () =
         FusionSolar.getStations (
             FusionSolar.init
                 { httpClient = mock.Object
+                  logger = new MockLogger()
                   userName = "test"
                   systemCode = "user" }
+        )
+
+    // Assert
+    match result with
+    | Ok res -> Assert.Equal(DataMocks.GetStationsResponse, res)
+    | Error _ -> Assert.True(false, "Expected Ok, got Error")
+
+    mock.VerifyAll()
+
+[<Fact>]
+let ``getStations should not call login if isLoggedIn is true`` () =
+    // Arrange
+    let mock =
+        mockHttpClientWithResponse (
+            Map.ofList [ FusionSolar.EndpointUrls.getStations, (Ok ResponseMocks.GetStationsSuccess) ]
+        )
+
+    // Act
+    let result =
+        FusionSolar.getStations (
+            { isLoggedIn = true
+              config =
+                { httpClient = mock.Object
+                  logger = new MockLogger()
+                  userName = "test"
+                  systemCode = "user" } }
         )
 
     // Assert

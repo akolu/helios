@@ -1,7 +1,8 @@
 module Helios.Core.Services.FusionSolar
 
-open Helios.Utils
+open Helios.Core.Utils
 open System.Net.Http
+open Helios.Core.Logger
 
 module Constants =
     let XSRF_TOKEN_COOKIE_KEY = "XSRF-TOKEN"
@@ -13,6 +14,13 @@ module EndpointUrls =
     let getHourlyData = baseUrl + "/getKpiStationHour"
 
 module Types =
+    module Login =
+        type LoginResponse =
+            { success: bool
+              failCode: int
+              ``params``: {| currentTime: int64 |}
+              message: string option }
+
     module GetStations =
         type PlantInfo =
             { plantCode: string
@@ -40,6 +48,7 @@ module Types =
 
 type Config =
     { httpClient: IHttpHandler
+      logger: ILogger
       userName: string
       systemCode: string }
 
@@ -55,6 +64,10 @@ let private login (this: FusionSolar) =
                 {| userName = this.config.userName
                    systemCode = this.config.systemCode |})
         )
+        |> tap (fun response ->
+            response
+            >>= HttpUtils.parseJsonBody<Types.Login.LoginResponse>
+            |> this.config.logger.LogJson)
         |> HttpUtils.parseCookie Constants.XSRF_TOKEN_COOKIE_KEY
     with
     | Some xsrfToken ->
@@ -62,12 +75,15 @@ let private login (this: FusionSolar) =
         Ok { this with isLoggedIn = true }
     | None -> Error(HttpRequestException "Could not log in")
 
+
 let rec getStations (this: FusionSolar) =
     match this.isLoggedIn with
     | false -> login this >>= getStations
     | true ->
         this.config.httpClient.Post(EndpointUrls.getStations, (HttpUtils.toJsonStringContent {| pageNo = 1 |}))
-        |> HttpUtils.parseJsonBody<Types.GetStations.GetStationsResponse>
+        >>= HttpUtils.parseJsonBody<Types.GetStations.GetStationsResponse>
+        |> tap this.config.logger.LogJson
+
 
 let rec getKpiStationHour (this: FusionSolar) =
     match this.isLoggedIn with

@@ -12,15 +12,26 @@ module HttpUtils =
     let toJsonStringContent (data: obj) =
         new StringContent(JsonConvert.SerializeObject(data), Encoding.UTF8, "application/json")
 
-    let parseJsonBody<'T> (response: Result<HttpResponseMessage, HttpRequestException>) =
-        match response with
-        | Ok response ->
-            async {
-                let! responseContent = response.Content.ReadAsStringAsync() |> Async.AwaitTask
-                return Ok(JsonConvert.DeserializeObject<'T>(responseContent))
-            }
-            |> Async.RunSynchronously
-        | Error err -> Error err
+    // let parseJsonBody<'T>
+    //     (response: Result<HttpResponseMessage, HttpRequestException>)
+    //     : Result<'T, HttpRequestException> =
+    //     match response with
+    //     | Ok response ->
+    //         async {
+    //             let! responseContent = response.Content.ReadAsStringAsync() |> Async.AwaitTask
+    //             printfn "%s" responseContent
+    //             return Ok(JsonConvert.DeserializeObject<'T>(responseContent))
+    //         }
+    //         |> Async.RunSynchronously
+    //     | Error err -> Error err
+    let parseJsonBody<'T> (response: HttpResponseMessage) : Result<'T, HttpRequestException> =
+        match response.Content.ReadAsStringAsync().Result with
+        | null -> Error(new HttpRequestException "Response body is null")
+        | json ->
+            try
+                Ok(JsonConvert.DeserializeObject<'T>(json))
+            with :? JsonException as ex ->
+                Error(new HttpRequestException(ex.Message))
 
     let parseCookie (key: string) (response: Result<HttpResponseMessage, HttpRequestException>) =
         match response with

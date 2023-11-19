@@ -10,7 +10,7 @@ open Xunit
 open System.Threading.Tasks
 open System.Threading
 open System.Text
-open Helios.Utils
+open Helios.Core.Utils
 
 let TEST_URL = "http://test.com/"
 
@@ -114,7 +114,7 @@ let ``parseJsonBody should parse Json successfully from response`` () =
         )
 
     // Act
-    let result = HttpUtils.parseJsonBody (Ok response)
+    let result = HttpUtils.parseJsonBody response
 
     // Assert
     let responseBody = result |> unwrap
