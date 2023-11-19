@@ -68,12 +68,12 @@ let private login (this: FusionSolar) =
             response
             >>= HttpUtils.parseJsonBody<Types.Login.LoginResponse>
             |> this.config.logger.LogJson)
-        |> HttpUtils.parseCookie Constants.XSRF_TOKEN_COOKIE_KEY
+        >>= HttpUtils.parseCookie Constants.XSRF_TOKEN_COOKIE_KEY
     with
-    | Some xsrfToken ->
+    | Ok xsrfToken ->
         this.config.httpClient.SetCookie(EndpointUrls.baseUrl, Constants.XSRF_TOKEN_COOKIE_KEY, xsrfToken) // mutate :(
         Ok { this with isLoggedIn = true }
-    | None -> Error(HttpRequestException "Could not log in")
+    | Error err -> Error err
 
 
 let rec getStations (this: FusionSolar) =

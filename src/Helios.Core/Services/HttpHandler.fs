@@ -12,44 +12,33 @@ module HttpUtils =
     let toJsonStringContent (data: obj) =
         new StringContent(JsonConvert.SerializeObject(data), Encoding.UTF8, "application/json")
 
-    // let parseJsonBody<'T>
-    //     (response: Result<HttpResponseMessage, HttpRequestException>)
-    //     : Result<'T, HttpRequestException> =
-    //     match response with
-    //     | Ok response ->
-    //         async {
-    //             let! responseContent = response.Content.ReadAsStringAsync() |> Async.AwaitTask
-    //             printfn "%s" responseContent
-    //             return Ok(JsonConvert.DeserializeObject<'T>(responseContent))
-    //         }
-    //         |> Async.RunSynchronously
-    //     | Error err -> Error err
-    let parseJsonBody<'T> (response: HttpResponseMessage) : Result<'T, HttpRequestException> =
+    let parseJsonBody<'T> (response: HttpResponseMessage) =
         match response.Content.ReadAsStringAsync().Result with
-        | null -> Error(new HttpRequestException "Response body is null")
+        | null -> Error "Response body is null"
         | json ->
             try
                 Ok(JsonConvert.DeserializeObject<'T>(json))
             with :? JsonException as ex ->
-                Error(new HttpRequestException(ex.Message))
+                Error ex.Message
 
-    let parseCookie (key: string) (response: Result<HttpResponseMessage, HttpRequestException>) =
-        match response with
-        | Ok response ->
-            let mutable values: seq<string> = Seq.empty
+    let parseCookie (key: string) (response: HttpResponseMessage) : Result<string, string> =
+        let mutable values: seq<string> = Seq.empty
 
-            if response.Headers.TryGetValues("Set-Cookie", &values) then
+        if response.Headers.TryGetValues("Set-Cookie", &values) then
+            match
                 values
                 |> Seq.map (fun x -> x.Split(';').[0].Split('='))
                 |> Seq.tryFind (fun parts -> parts.[0] = key)
                 |> Option.map (fun parts -> parts.[1])
-            else
-                None
-        | Error _ -> None // TODO: handle thrown HttpResponseExceptions here
+            with
+            | Some cookie -> Ok cookie
+            | None -> Error "Cookie not found"
+        else
+            Error "Cookie not found"
 
 type IHttpHandler =
-    abstract member Get: string -> Result<HttpResponseMessage, HttpRequestException>
-    abstract member Post: string * StringContent -> Result<HttpResponseMessage, HttpRequestException>
+    abstract member Get: string -> Result<HttpResponseMessage, string>
+    abstract member Post: string * StringContent -> Result<HttpResponseMessage, string>
     abstract member SetCookie: string * string * string -> unit
 
 type HttpHandler(?httpMessageHandler: HttpClientHandler) =
@@ -61,7 +50,7 @@ type HttpHandler(?httpMessageHandler: HttpClientHandler) =
             let! response = requestFunc client url |> Async.AwaitTask
 
             if not response.IsSuccessStatusCode then
-                return Error(new HttpRequestException(sprintf "Received status code %d" (int response.StatusCode)))
+                return Error(sprintf "Received status code %d" (int response.StatusCode))
             else
                 return Ok response
         }

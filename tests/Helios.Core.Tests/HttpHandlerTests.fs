@@ -75,8 +75,8 @@ let ``Post should return result when response is successful & parse cookie from 
     // Assert
     let body = (response |> unwrap).Content.ReadAsStringAsync().Result
     Assert.Equal("result", body)
-    let cookie = HttpUtils.parseCookie "XSRF-TOKEN" response
-    Assert.Equal("123456789", cookie.Value)
+    let cookie = response >>= HttpUtils.parseCookie "XSRF-TOKEN" |> unwrap
+    Assert.Equal("123456789", cookie)
 
     mock
         .Protected()
@@ -101,8 +101,8 @@ let ``Post should throw HttpRequestException when response status code is 400`` 
     match http.Post("http://test.com/", (HttpUtils.toJsonStringContent {| Name = "test" |})) with
     | Ok _ -> Assert.True(false, "Expected exception")
     | Error err ->
-        let actualException = Assert.IsType<HttpRequestException>(err)
-        Assert.Equal("Received status code 400", actualException.Message)
+        let actualException = Assert.IsType<string>(err)
+        Assert.Equal("Received status code 400", actualException)
 
 [<Fact>]
 let ``parseJsonBody should parse Json successfully from response`` () =

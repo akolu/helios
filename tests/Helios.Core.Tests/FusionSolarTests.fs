@@ -72,7 +72,7 @@ type MockLogger() =
     interface ILogger with
         member _.LogJson(data: 'T) = ()
 
-let mockHttpClientWithResponse (responses: Map<string, Result<HttpResponseMessage, HttpRequestException>>) =
+let mockHttpClientWithResponse (responses: Map<string, Result<HttpResponseMessage, string>>) =
     let mock = new Mock<IHttpHandler>(MockBehavior.Strict)
 
     responses
