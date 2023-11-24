@@ -15,7 +15,7 @@ module EndpointUrls =
 
 module Types =
     module Login =
-        type LoginResponse =
+        type ResponseBody =
             { success: bool
               failCode: int
               ``params``: {| currentTime: int64 |}
@@ -40,11 +40,36 @@ module Types =
               pageSize: int
               list: PlantInfo list }
 
-        type GetStationsResponse =
+        type ResponseBody =
             { success: bool
               failCode: int
               message: string option
               data: Data }
+
+    module GetHourlyData =
+        type DataPoint =
+            { stationCode: string
+              collectTime: int64
+              dataItemMap:
+                  {| radiation_intensity: int64
+                     inverter_power: int64
+                     power_profit: int64
+                     theory_power: int64
+                     ongrid_power: int64 |} }
+
+        type ResponseBody =
+            { success: bool
+              failCode: int
+              ``params``:
+                  {| stationCodes: string
+                     currentTime: int64
+                     collectTime: int64 |}
+              message: string option
+              data: DataPoint list }
+
+        type RequestBody =
+            { stationCodes: string
+              collectTime: int64 }
 
 type Config =
     { httpClient: IHttpHandler
@@ -66,7 +91,7 @@ let private login (this: FusionSolar) =
         )
         |> tap (fun response ->
             response
-            >>= HttpUtils.parseJsonBody<Types.Login.LoginResponse>
+            >>= HttpUtils.parseJsonBody<Types.Login.ResponseBody>
             |> this.config.logger.LogJson)
         >>= HttpUtils.parseCookie Constants.XSRF_TOKEN_COOKIE_KEY
     with
@@ -81,11 +106,14 @@ let rec getStations (this: FusionSolar) =
     | false -> login this >>= getStations
     | true ->
         this.config.httpClient.Post(EndpointUrls.getStations, (HttpUtils.toJsonStringContent {| pageNo = 1 |}))
-        >>= HttpUtils.parseJsonBody<Types.GetStations.GetStationsResponse>
+        >>= HttpUtils.parseJsonBody<Types.GetStations.ResponseBody>
         |> tap this.config.logger.LogJson
 
 
-let rec getKpiStationHour (this: FusionSolar) =
+let rec getHourlyData (stationCode: Types.GetHourlyData.RequestBody) (this: FusionSolar) =
     match this.isLoggedIn with
-    | false -> login this >>= getKpiStationHour
-    | true -> Ok "getStationRealKpi stub"
+    | false -> login this >>= (getHourlyData stationCode)
+    | true ->
+        this.config.httpClient.Post(EndpointUrls.getHourlyData, (HttpUtils.toJsonStringContent stationCode))
+        >>= HttpUtils.parseJsonBody<Types.GetHourlyData.ResponseBody>
+        |> tap this.config.logger.LogJson

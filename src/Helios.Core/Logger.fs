@@ -1,7 +1,6 @@
 module Helios.Core.Logger
 
 open Newtonsoft.Json
-open System.Net.Http
 
 type ILogger =
     abstract member LogJson: 'T -> unit

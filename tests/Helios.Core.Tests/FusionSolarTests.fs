@@ -11,19 +11,19 @@ open Helios.Core.Logger
 open FusionSolar.Types
 
 module internal DataMocks =
-    let LoginSuccessResponse: Login.LoginResponse =
+    let LoginSuccessResponse: Login.ResponseBody =
         { success = true
           failCode = 0
           ``params`` = {| currentTime = 1L |}
           message = None }
 
-    let LoginFailureResponse: Login.LoginResponse =
+    let LoginFailureResponse: Login.ResponseBody =
         { success = false
           failCode = 1
           ``params`` = {| currentTime = 1L |}
           message = Some "login failure" }
 
-    let GetStationsResponse: GetStations.GetStationsResponse =
+    let GetStationsResponse: GetStations.ResponseBody =
         { success = true
           failCode = 0
           message = None
@@ -42,6 +42,24 @@ module internal DataMocks =
                     contactPerson = "mockContactPerson"
                     contactMethod = "mockContactMethod"
                     gridConnectionDate = "mockGridConnectionDate" } ] } }
+
+    let GetHourlyDataResponse: GetHourlyData.ResponseBody =
+        { success = true
+          failCode = 0
+          ``params`` =
+            {| stationCodes = "ABCD123"
+               currentTime = 1L
+               collectTime = 1L |}
+          message = None
+          data =
+            [ { stationCode = "mockStationCode"
+                collectTime = 1L
+                dataItemMap =
+                  {| radiation_intensity = 1L
+                     inverter_power = 1L
+                     power_profit = 1L
+                     theory_power = 1L
+                     ongrid_power = 1L |} } ] }
 
 module internal ResponseMocks =
     let LoginSuccess =
@@ -66,6 +84,12 @@ module internal ResponseMocks =
         new HttpResponseMessage(
             HttpStatusCode.OK,
             Content = new StringContent(JsonConvert.SerializeObject(DataMocks.GetStationsResponse), Encoding.UTF8)
+        )
+
+    let getHourlyDataSuccess =
+        new HttpResponseMessage(
+            HttpStatusCode.OK,
+            Content = new StringContent(JsonConvert.SerializeObject(DataMocks.GetHourlyDataResponse), Encoding.UTF8)
         )
 
 type MockLogger() =
@@ -154,6 +178,66 @@ let ``getStations should not call login if isLoggedIn is true`` () =
     // Assert
     match result with
     | Ok res -> Assert.Equal(DataMocks.GetStationsResponse, res)
+    | Error _ -> Assert.True(false, "Expected Ok, got Error")
+
+    mock.VerifyAll()
+
+[<Fact>]
+let ``getHourlyData should call login first if isLoggedIn is false`` () =
+    // Arrange
+    let mock =
+        mockHttpClientWithResponse (
+            Map.ofList
+                [ FusionSolar.EndpointUrls.login, (Ok ResponseMocks.LoginSuccess)
+                  FusionSolar.EndpointUrls.getHourlyData, (Ok ResponseMocks.getHourlyDataSuccess) ]
+        )
+
+    mock
+        .Setup(fun x ->
+            x.SetCookie(FusionSolar.EndpointUrls.baseUrl, FusionSolar.Constants.XSRF_TOKEN_COOKIE_KEY, "mockXsrfToken"))
+        .Verifiable()
+
+    // Act
+    let result =
+        FusionSolar.getHourlyData
+            { stationCodes = "ABCD123"
+              collectTime = 1L }
+            (FusionSolar.init
+                { httpClient = mock.Object
+                  logger = new MockLogger()
+                  userName = "test"
+                  systemCode = "user" })
+
+    // Assert
+    match result with
+    | Ok res -> Assert.Equal(DataMocks.GetHourlyDataResponse, res)
+    | Error _ -> Assert.True(false, "Expected Ok, got Error")
+
+    mock.VerifyAll()
+
+[<Fact>]
+let ``getHourlyData should not call login if isLoggedIn is true`` () =
+    // Arrange
+    let mock =
+        mockHttpClientWithResponse (
+            Map.ofList [ FusionSolar.EndpointUrls.getHourlyData, (Ok ResponseMocks.getHourlyDataSuccess) ]
+        )
+
+    // Act
+    let result =
+        FusionSolar.getHourlyData
+            { stationCodes = "ABCD123"
+              collectTime = 1L }
+            { isLoggedIn = true
+              config =
+                { httpClient = mock.Object
+                  logger = new MockLogger()
+                  userName = "test"
+                  systemCode = "user" } }
+
+    // Assert
+    match result with
+    | Ok res -> Assert.Equal(DataMocks.GetHourlyDataResponse, res)
     | Error _ -> Assert.True(false, "Expected Ok, got Error")
 
     mock.VerifyAll()
