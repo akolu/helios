@@ -1,7 +1,6 @@
 module Helios.Core.Services.FusionSolar
 
 open Helios.Core.Utils
-open System.Net.Http
 open Helios.Core.Logger
 
 module Constants =
