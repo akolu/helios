@@ -1,3 +1,6 @@
+# SQLite db file
+src/Helios.Core/Helios.sqlite
+
 # Fable generated files
 .fable
 *.fs.js

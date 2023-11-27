@@ -1,8 +1,8 @@
 ﻿open Helios.Core.Main
 
 let config =
-    { userName = "user"
-      systemCode = "code" }
+    {| userName = "user"
+       systemCode = "code" |}
 
 let csv = "data.csv"
 

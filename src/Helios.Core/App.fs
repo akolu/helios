@@ -1,13 +1,28 @@
 namespace Helios.Core
 
+open Microsoft.Extensions.DependencyInjection
+open Microsoft.EntityFrameworkCore
+open Database
+open System
+
 module Main =
+
     type App =
-        { userName: string
-          systemCode: string }
+        { ServiceProvider: IServiceProvider }
 
         static member Init config =
-            { userName = config.userName
-              systemCode = config.systemCode }
+            // Create a new service collection
+            let serviceCollection = new ServiceCollection()
+
+            // Add the DbContext to the service collection
+            serviceCollection.AddDbContext<HeliosDatabaseContext>(fun options ->
+                options.UseSqlite("Data Source=helios.db") |> ignore)
+            |> ignore
+
+            // Build the service provider
+            let serviceProvider = serviceCollection.BuildServiceProvider()
+
+            { ServiceProvider = serviceProvider }
 
     let import (csv: string) (app: App) = printfn "Importing %s... (stub)" csv
 

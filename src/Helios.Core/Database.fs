@@ -2,6 +2,8 @@ module Helios.Core.Database
 
 open Microsoft.EntityFrameworkCore
 open Helios.Core.Models.EnergyMeasurement
+open Microsoft.EntityFrameworkCore.Infrastructure
+open System
 
 type HeliosDatabaseContext(options: DbContextOptions<HeliosDatabaseContext>) =
     inherit DbContext(options)
@@ -15,3 +17,14 @@ type HeliosDatabaseContext(options: DbContextOptions<HeliosDatabaseContext>) =
 
     override _.OnModelCreating(modelBuilder: ModelBuilder) =
         modelBuilder.Entity<EnergyMeasurement>().HasKey("Time", "FlowType") |> ignore
+
+    new() =
+        let optionsBuilder = DbContextOptionsBuilder<HeliosDatabaseContext>()
+
+        optionsBuilder.UseSqlite(
+            "Data Source=../Helios.Core/Helios.sqlite",
+            (fun f -> f.MigrationsAssembly("Helios.Migrations") |> ignore)
+        )
+        |> ignore
+
+        new HeliosDatabaseContext(optionsBuilder.Options)
