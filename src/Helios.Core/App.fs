@@ -1,30 +1,69 @@
 namespace Helios.Core
 
 open Microsoft.Extensions.DependencyInjection
+open Microsoft.Extensions.Configuration
 open Microsoft.EntityFrameworkCore
 open Database
+open Helios.Core.Services
+open Helios.Core.Models
+open Helios.Core.Utils
+open Repository
+open Logger
 open System
+
+type Secrets =
+    { FusionSolar:
+        {| Username: string
+           Password: string
+           StationCode: string |} }
 
 module Main =
 
     type App =
-        { ServiceProvider: IServiceProvider }
+        { Repository: EnergyMeasurementRepository
+          Config: IConfiguration
+          FusionSolar: FusionSolar.FusionSolar }
 
-        static member Init config =
-            // Create a new service collection
+        static member Init(dbPath) =
             let serviceCollection = new ServiceCollection()
 
-            // Add the DbContext to the service collection
             serviceCollection.AddDbContext<HeliosDatabaseContext>(fun options ->
-                options.UseSqlite("Data Source=helios.db") |> ignore)
+                options.UseSqlite(sprintf "Data Source=%s" dbPath) |> ignore)
             |> ignore
 
             // Build the service provider
             let serviceProvider = serviceCollection.BuildServiceProvider()
+            let dbContext = serviceProvider.GetService<HeliosDatabaseContext>()
+            let repository = new EnergyMeasurementRepository(dbContext)
 
-            { ServiceProvider = serviceProvider }
+            let configuration =
+                (new ConfigurationBuilder())
+                    .SetBasePath(AppContext.BaseDirectory)
+                    // .AddJsonFile("appsettings.json", optional = false, reloadOnChange = true)
+                    .AddUserSecrets<Secrets>() // NOTE: without type parameter, it doesn't work
+                    .AddEnvironmentVariables()
+                    .Build()
 
-    let import (csv: string) (app: App) = printfn "Importing %s... (stub)" csv
+            { Repository = repository
+              Config = configuration
+              FusionSolar =
+                FusionSolar.init
+                    { httpClient = new HttpHandler()
+                      logger = ConsoleLogger()
+                      userName = configuration.GetSection("FusionSolar").["UserName"]
+                      systemCode = configuration.GetSection("FusionSolar").["Password"] } }
 
-    let generateReport (startDate, endDate) (app: App) =
-        printfn "Generating report from %s to %s... (stub)" startDate endDate
+    let importFusionSolar (date: DateTimeOffset) (app: App) =
+        app.FusionSolar
+        |> tap (fun _ -> printfn "Successfully initialized FusionSolar client, getting data from date %A" date)
+        |> FusionSolar.getHourlyData
+            { stationCodes = app.Config.GetSection("FusionSolar").["StationCode"]
+              collectTime = date.ToUnixTimeMilliseconds() }
+        |> tap (fun _ -> printfn "Successfully got data from date %A" date)
+        |> unwrap
+        |> EnergyMeasurement.fromFusionSolarResponse
+        |> tap (fun r ->
+            printfn "Successfully parsed data from FusionSolar response:"
+            r |> List.iter (fun x -> printfn "%A" (x.ToString())))
+        |> app.Repository.Save
+        |> tap (fun _ -> printfn "Successfully saved data to database")

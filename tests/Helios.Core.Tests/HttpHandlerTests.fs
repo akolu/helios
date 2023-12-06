@@ -4,13 +4,13 @@ open Moq
 open Moq.Protected
 open System.Net
 open System.Net.Http
-open Newtonsoft.Json
 open Helios.Core.Services
 open Xunit
 open System.Threading.Tasks
 open System.Threading
 open System.Text
 open Helios.Core.Utils
+open Helios.Core.Models
 
 let TEST_URL = "http://test.com/"
 
@@ -85,7 +85,7 @@ let ``Post should return result when response is successful & parse cookie from 
             Times.Exactly(1),
             ItExpr.Is<HttpRequestMessage>(fun req ->
                 req.RequestUri.ToString() = TEST_URL
-                && req.Content.ReadAsStringAsync().Result = JsonConvert.SerializeObject(data)),
+                && req.Content.ReadAsStringAsync().Result = Json.JsonSerializer.Serialize(data)),
             ItExpr.IsAny<CancellationToken>()
         )
 
@@ -110,7 +110,7 @@ let ``parseJsonBody should parse Json successfully from response`` () =
     let response =
         new HttpResponseMessage(
             HttpStatusCode.OK,
-            Content = new StringContent(JsonConvert.SerializeObject {| Id = 1 |}, Encoding.UTF8)
+            Content = new StringContent(Json.JsonSerializer.Serialize {| Id = 1 |}, Encoding.UTF8)
         )
 
     // Act
@@ -119,3 +119,95 @@ let ``parseJsonBody should parse Json successfully from response`` () =
     // Assert
     let responseBody = result |> unwrap
     Assert.Equal({| Id = 1 |}, responseBody)
+
+[<Fact>]
+let ``parseJsonBody deserializes FusionSolar.GetHourlyData.ResponseBody correctly`` () =
+    let data =
+        """
+{
+  "data": [
+    {
+      "collectTime": 1696042800000,
+      "stationCode": "123",
+      "dataItemMap": {
+        "radiation_intensity": null,
+        "inverter_power": null,
+        "power_profit": null,
+        "theory_power": null,
+        "ongrid_power": null
+      }
+    },
+    {
+      "collectTime": 1696046400000,
+      "stationCode": "123",
+      "dataItemMap": {
+        "radiation_intensity": null,
+        "inverter_power": 0,
+        "power_profit": null,
+        "theory_power": null,
+        "ongrid_power": null
+      }
+    },
+    {
+      "collectTime": 1696050000000,
+      "stationCode": "123",
+      "dataItemMap": {
+        "radiation_intensity": null,
+        "inverter_power": 0.01,
+        "power_profit": null,
+        "theory_power": null,
+        "ongrid_power": null
+      }
+    },
+  ],
+  "failCode": 0,
+  "message": null,
+  "params": {
+    "currentTime": 1701818143912,
+    "collectTime": 1696021200000,
+    "stationCodes": "123"
+  },
+  "success": true
+}
+"""
+
+    let responseMessage =
+        new HttpResponseMessage(HttpStatusCode.OK, Content = new StringContent(data, Encoding.UTF8))
+
+    let expected: FusionSolar.Types.GetHourlyData.ResponseBody =
+        { success = true
+          failCode = 0
+          ``params`` =
+            {| stationCodes = "123"
+               currentTime = 1701818143912L
+               collectTime = 1696021200000L |}
+          message = None
+          data =
+            [ { stationCode = "123"
+                collectTime = 1696042800000L
+                dataItemMap =
+                  { radiation_intensity = None
+                    inverter_power = None
+                    power_profit = None
+                    theory_power = None
+                    ongrid_power = None } }
+              { stationCode = "123"
+                collectTime = 1696046400000L
+                dataItemMap =
+                  { radiation_intensity = None
+                    inverter_power = Some 0.0
+                    power_profit = None
+                    theory_power = None
+                    ongrid_power = None } }
+              { stationCode = "123"
+                collectTime = 1696050000000L
+                dataItemMap =
+                  { radiation_intensity = None
+                    inverter_power = Some 0.01
+                    power_profit = None
+                    theory_power = None
+                    ongrid_power = None } } ] }
+
+    match HttpUtils.parseJsonBody<FusionSolar.Types.GetHourlyData.ResponseBody> (responseMessage) with
+    | Ok responseBody -> Assert.Equal(responseBody, expected)
+    | Error err -> Assert.True(false, err)

@@ -2,8 +2,6 @@ module Helios.Core.Database
 
 open Microsoft.EntityFrameworkCore
 open Helios.Core.Models.EnergyMeasurement
-open Microsoft.EntityFrameworkCore.Infrastructure
-open System
 
 type HeliosDatabaseContext(options: DbContextOptions<HeliosDatabaseContext>) =
     inherit DbContext(options)

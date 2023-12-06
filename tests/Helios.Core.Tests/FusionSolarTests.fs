@@ -6,7 +6,6 @@ open Helios.Core.Services
 open System.Net.Http
 open System.Net
 open System.Text
-open Newtonsoft.Json
 open Helios.Core.Logger
 open FusionSolar.Types
 
@@ -55,18 +54,19 @@ module internal DataMocks =
             [ { stationCode = "mockStationCode"
                 collectTime = 1L
                 dataItemMap =
-                  {| radiation_intensity = 1L
-                     inverter_power = 1L
-                     power_profit = 1L
-                     theory_power = 1L
-                     ongrid_power = 1L |} } ] }
+                  { radiation_intensity = Some 1
+                    inverter_power = Some 1
+                    power_profit = Some 1
+                    theory_power = None
+                    ongrid_power = None } } ] }
 
 module internal ResponseMocks =
     let LoginSuccess =
         let response =
             new HttpResponseMessage(
                 HttpStatusCode.OK,
-                Content = new StringContent(JsonConvert.SerializeObject(DataMocks.LoginSuccessResponse), Encoding.UTF8)
+                Content =
+                    new StringContent(Json.JsonSerializer.Serialize(DataMocks.LoginSuccessResponse), Encoding.UTF8)
             )
 
         response.Headers.Add("Set-Cookie", "XSRF-TOKEN=mockXsrfToken; path=/; secure; HttpOnly")
@@ -75,7 +75,7 @@ module internal ResponseMocks =
     let LoginFailureNoCookie =
         new HttpResponseMessage(
             HttpStatusCode.OK,
-            Content = new StringContent(JsonConvert.SerializeObject(DataMocks.LoginFailureResponse), Encoding.UTF8)
+            Content = new StringContent(Json.JsonSerializer.Serialize(DataMocks.LoginFailureResponse), Encoding.UTF8)
         )
 
     let LoginFailureHttpError = new HttpResponseMessage(HttpStatusCode.BadRequest)
@@ -83,18 +83,18 @@ module internal ResponseMocks =
     let GetStationsSuccess =
         new HttpResponseMessage(
             HttpStatusCode.OK,
-            Content = new StringContent(JsonConvert.SerializeObject(DataMocks.GetStationsResponse), Encoding.UTF8)
+            Content = new StringContent(Json.JsonSerializer.Serialize(DataMocks.GetStationsResponse), Encoding.UTF8)
         )
 
     let getHourlyDataSuccess =
         new HttpResponseMessage(
             HttpStatusCode.OK,
-            Content = new StringContent(JsonConvert.SerializeObject(DataMocks.GetHourlyDataResponse), Encoding.UTF8)
+            Content = new StringContent(Json.JsonSerializer.Serialize(DataMocks.GetHourlyDataResponse), Encoding.UTF8)
         )
 
 type MockLogger() =
     interface ILogger with
-        member _.LogJson(data: 'T) = ()
+        member _.LogJson(data: Result<'T, string>) = ()
 
 let mockHttpClientWithResponse (responses: Map<string, Result<HttpResponseMessage, string>>) =
     let mock = new Mock<IHttpHandler>(MockBehavior.Strict)
@@ -135,8 +135,7 @@ let ``getStations should call login first if isLoggedIn is false`` () =
         )
 
     mock
-        .Setup(fun x ->
-            x.SetCookie(FusionSolar.EndpointUrls.baseUrl, FusionSolar.Constants.XSRF_TOKEN_COOKIE_KEY, "mockXsrfToken"))
+        .Setup(fun x -> x.SetAuthHeader(FusionSolar.Constants.XSRF_TOKEN_COOKIE_KEY, "mockXsrfToken"))
         .Verifiable()
 
     // Act
@@ -193,8 +192,7 @@ let ``getHourlyData should call login first if isLoggedIn is false`` () =
         )
 
     mock
-        .Setup(fun x ->
-            x.SetCookie(FusionSolar.EndpointUrls.baseUrl, FusionSolar.Constants.XSRF_TOKEN_COOKIE_KEY, "mockXsrfToken"))
+        .Setup(fun x -> x.SetAuthHeader(FusionSolar.Constants.XSRF_TOKEN_COOKIE_KEY, "mockXsrfToken"))
         .Verifiable()
 
     // Act
@@ -211,7 +209,7 @@ let ``getHourlyData should call login first if isLoggedIn is false`` () =
     // Assert
     match result with
     | Ok res -> Assert.Equal(DataMocks.GetHourlyDataResponse, res)
-    | Error _ -> Assert.True(false, "Expected Ok, got Error")
+    | Error err -> Assert.True(false, err)
 
     mock.VerifyAll()
 

@@ -10,5 +10,19 @@ type EnergyMeasurementRepository(db: HeliosDatabaseContext) =
         |> Seq.toList
 
     member _.Save(yields: EnergyMeasurement list) =
-        db.EnergyMeasurements.AddRange(yields)
+        let existingMeasurements =
+            db.EnergyMeasurements
+            |> Seq.filter (fun m -> yields |> List.exists (fun y -> y.Time = m.Time && y.FlowType = m.FlowType))
+            |> Seq.toList
+
+        let existingRows, newRows =
+            yields
+            |> List.partition (fun row ->
+                existingMeasurements
+                |> List.exists (fun m -> row.Time = m.Time && row.FlowType = m.FlowType))
+
+        existingRows
+        |> List.iter (fun row -> printfn "Warning: EnergyMeasurement %s already exists, ignoring" (row.ToString()))
+
+        db.EnergyMeasurements.AddRange(newRows)
         db.SaveChanges() |> ignore

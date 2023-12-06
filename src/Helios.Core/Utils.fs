@@ -12,3 +12,6 @@ let unwrap res =
 let tap f x =
     f x
     x
+
+let takeLast num (xs: 'a list) =
+    xs |> List.rev |> List.take (Math.Min(xs.Length, num)) |> List.rev

@@ -38,8 +38,8 @@ type RepositoryTests() =
             new EnergyMeasurementRepository(dbContext.Value)
 
         let measurements =
-            [ EnergyMeasurement(time = DateTime.Parse("2020-01-01"), flowType = FlowType.Production, kwh = 100.0)
-              EnergyMeasurement(time = DateTime.Parse("2020-01-02"), flowType = FlowType.Consumption, kwh = 200.0) ]
+            [ EnergyMeasurement(time = DateTimeOffset.Parse("2020-01-01"), flowType = FlowType.Production, kwh = 100.0)
+              EnergyMeasurement(time = DateTimeOffset.Parse("2020-01-02"), flowType = FlowType.Consumption, kwh = 200.0) ]
 
         // Act
         repository.Save(measurements)
@@ -53,31 +53,61 @@ type RepositoryTests() =
         Assert.Equal(measurements, allMeasurements)
 
     [<Fact>]
+    member _.``Duplicate EnergyMeasurements will be ignored``() =
+        // Arrange
+        let repository: EnergyMeasurementRepository =
+            new EnergyMeasurementRepository(dbContext.Value)
+
+        let measurements =
+            [ EnergyMeasurement(time = DateTimeOffset.Parse("2020-01-01"), flowType = FlowType.Production, kwh = 100.0)
+              EnergyMeasurement(time = DateTimeOffset.Parse("2020-01-02"), flowType = FlowType.Consumption, kwh = 200.0) ]
+
+        // Act
+        repository.Save(measurements)
+        repository.Save(measurements) // should be ignored
+
+        // Assert
+        let allMeasurements =
+            dbContext.Value.EnergyMeasurements.ToListAsync()
+            |> Async.AwaitTask
+            |> Async.RunSynchronously
+
+        Assert.Equal([| measurements.[0]; measurements.[1] |], allMeasurements)
+
+    [<Fact>]
     member _.``EnergyMeasurements can be read from the database, filtered by date & flowType``() =
         // Arrange
         let repository: EnergyMeasurementRepository =
             new EnergyMeasurementRepository(dbContext.Value)
 
         let measurements =
-            [ EnergyMeasurement(time = DateTime.Parse("2020-01-01"), flowType = FlowType.Production, kwh = 10.0)
-              EnergyMeasurement(time = DateTime.Parse("2020-01-01"), flowType = FlowType.Consumption, kwh = 100.0)
-              EnergyMeasurement(time = DateTime.Parse("2020-01-02"), flowType = FlowType.Consumption, kwh = 200.0) ]
+            [ EnergyMeasurement(time = DateTimeOffset.Parse("2020-01-01"), flowType = FlowType.Production, kwh = 10.0)
+              EnergyMeasurement(time = DateTimeOffset.Parse("2020-01-01"), flowType = FlowType.Consumption, kwh = 100.0)
+              EnergyMeasurement(time = DateTimeOffset.Parse("2020-01-02"), flowType = FlowType.Consumption, kwh = 200.0) ]
 
         dbContext.Value.EnergyMeasurements.AddRange(measurements) |> ignore
         dbContext.Value.SaveChanges() |> ignore
 
         // Act
         let result1 =
-            repository.Find(DateTime.Parse("2020-01-01"), DateTime.Parse("2020-01-01"), FlowType.Consumption)
+            repository.Find(
+                DateTimeOffset.Parse("2020-01-01"),
+                DateTimeOffset.Parse("2020-01-01"),
+                FlowType.Consumption
+            )
 
         let result2 =
-            repository.Find(DateTime.Parse("2020-01-01"), DateTime.Parse("2020-02-01"), FlowType.Consumption)
+            repository.Find(
+                DateTimeOffset.Parse("2020-01-01"),
+                DateTimeOffset.Parse("2020-02-01"),
+                FlowType.Consumption
+            )
 
         let result3 =
-            repository.Find(DateTime.Parse("2020-01-01"), DateTime.Parse("2022-01-01"), FlowType.Production)
+            repository.Find(DateTimeOffset.Parse("2020-01-01"), DateTimeOffset.Parse("2022-01-01"), FlowType.Production)
 
         let noResults =
-            repository.Find(DateTime.Parse("2020-02-01"), DateTime.Parse("2022-03-01"), FlowType.Production)
+            repository.Find(DateTimeOffset.Parse("2020-02-01"), DateTimeOffset.Parse("2022-03-01"), FlowType.Production)
 
         // Assert
         Assert.Equal([| measurements.[1] |], result1)

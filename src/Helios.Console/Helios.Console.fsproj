@@ -3,14 +3,21 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
+    <UserSecretsId>8a57edf3-411d-4835-b450-4c7a05003943</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="ConsoleUI.fs" />
+    <Compile Include="Services.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Helios.Core\Helios.Core.fsproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Spectre.Console" Version="0.48.0" />
   </ItemGroup>
 
 </Project>

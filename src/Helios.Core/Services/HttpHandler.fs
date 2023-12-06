@@ -1,23 +1,23 @@
 ﻿namespace Helios.Core.Services
 
 open System.Text
+open System.Text.Json
 open System.Net.Http
-open Newtonsoft.Json
 open System.Threading.Tasks
-open System.Net
-open System
 
 module HttpUtils =
-
     let toJsonStringContent (data: obj) =
-        new StringContent(JsonConvert.SerializeObject(data), Encoding.UTF8, "application/json")
+        new StringContent(Json.JsonSerializer.Serialize(data), Encoding.UTF8, "application/json")
 
     let parseJsonBody<'T> (response: HttpResponseMessage) =
+
         match response.Content.ReadAsStringAsync().Result with
         | null -> Error "Response body is null"
         | json ->
             try
-                Ok(JsonConvert.DeserializeObject<'T>(json))
+                let options = JsonSerializerOptions()
+                options.AllowTrailingCommas <- true
+                Ok(Json.JsonSerializer.Deserialize<'T>(json, options))
             with :? JsonException as ex ->
                 Error ex.Message
 
@@ -39,14 +39,18 @@ module HttpUtils =
 type IHttpHandler =
     abstract member Get: string -> Result<HttpResponseMessage, string>
     abstract member Post: string * StringContent -> Result<HttpResponseMessage, string>
-    abstract member SetCookie: string * string * string -> unit
+    abstract member SetAuthHeader: string * string -> unit // TODO: this sucks, improve
 
 type HttpHandler(?httpMessageHandler: HttpClientHandler) =
-    let handler = defaultArg httpMessageHandler (new HttpClientHandler())
+    let mutable authHeader = ""
 
     let doRequest (requestFunc: HttpClient -> string -> Task<HttpResponseMessage>) url =
         async {
-            use client = new HttpClient(handler)
+            use client = new HttpClient(defaultArg httpMessageHandler (new HttpClientHandler()))
+            // client.DefaultRequestHeaders.Accept.Add(MediaTypeWithQualityHeaderValue("application/json"))
+            if authHeader <> "" then
+                client.DefaultRequestHeaders.Add("XSRF-TOKEN", authHeader) |> ignore
+
             let! response = requestFunc client url |> Async.AwaitTask
 
             if not response.IsSuccessStatusCode then
@@ -63,9 +67,4 @@ type HttpHandler(?httpMessageHandler: HttpClientHandler) =
         member _.Post(url, content) =
             doRequest (fun client url -> client.PostAsync(url, content)) url
 
-        member _.SetCookie(url, key, value) =
-            if handler.CookieContainer = null then
-                handler.UseCookies <- true
-                handler.CookieContainer <- new CookieContainer()
-
-            handler.CookieContainer.Add(new Uri(url), new Cookie(key, value))
+        member _.SetAuthHeader(key, value) = authHeader <- value

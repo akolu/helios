@@ -5,7 +5,7 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{84319487-A019-42BD-A165-BB3657ACBA89}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Helios.Cli", "src\Helios.Cli\Helios.Cli.fsproj", "{1184B82D-9BA8-426C-8406-54B131079EAE}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Helios.Console", "src\Helios.Console\Helios.Console.fsproj", "{1184B82D-9BA8-426C-8406-54B131079EAE}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Helios.Core", "src\Helios.Core\Helios.Core.fsproj", "{77B45780-28AF-4903-824E-EB1B5B5ED43B}"
 EndProject

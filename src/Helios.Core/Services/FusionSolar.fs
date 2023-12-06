@@ -46,15 +46,17 @@ module Types =
               data: Data }
 
     module GetHourlyData =
+        type DataItemMap =
+            { radiation_intensity: double option
+              inverter_power: double option
+              power_profit: double option
+              theory_power: double option
+              ongrid_power: double option }
+
         type DataPoint =
             { stationCode: string
               collectTime: int64
-              dataItemMap:
-                  {| radiation_intensity: int64
-                     inverter_power: int64
-                     power_profit: int64
-                     theory_power: int64
-                     ongrid_power: int64 |} }
+              dataItemMap: DataItemMap }
 
         type ResponseBody =
             { success: bool
@@ -95,7 +97,7 @@ let private login (this: FusionSolar) =
         >>= HttpUtils.parseCookie Constants.XSRF_TOKEN_COOKIE_KEY
     with
     | Ok xsrfToken ->
-        this.config.httpClient.SetCookie(EndpointUrls.baseUrl, Constants.XSRF_TOKEN_COOKIE_KEY, xsrfToken) // mutate :(
+        this.config.httpClient.SetAuthHeader(Constants.XSRF_TOKEN_COOKIE_KEY, xsrfToken)
         Ok { this with isLoggedIn = true }
     | Error err -> Error err
 
@@ -109,10 +111,10 @@ let rec getStations (this: FusionSolar) =
         |> tap this.config.logger.LogJson
 
 
-let rec getHourlyData (stationCode: Types.GetHourlyData.RequestBody) (this: FusionSolar) =
+let rec getHourlyData (body: Types.GetHourlyData.RequestBody) (this: FusionSolar) =
     match this.isLoggedIn with
-    | false -> login this >>= (getHourlyData stationCode)
+    | false -> login this >>= (getHourlyData body)
     | true ->
-        this.config.httpClient.Post(EndpointUrls.getHourlyData, (HttpUtils.toJsonStringContent stationCode))
+        this.config.httpClient.Post(EndpointUrls.getHourlyData, (HttpUtils.toJsonStringContent body))
         >>= HttpUtils.parseJsonBody<Types.GetHourlyData.ResponseBody>
         |> tap this.config.logger.LogJson

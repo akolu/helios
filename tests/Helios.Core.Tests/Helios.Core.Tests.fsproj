@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="LoggerTests.fs" />
     <Compile Include="HttpHandlerTests.fs" />
     <Compile Include="FusionSolarTests.fs" />
     <Compile Include="RepositoryTests.fs" />
