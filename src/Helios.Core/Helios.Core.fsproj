@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <UserSecretsId>5c166189-d094-4b1b-97b5-99fbe849ddba</UserSecretsId>
   </PropertyGroup>
 

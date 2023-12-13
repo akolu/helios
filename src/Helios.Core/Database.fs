@@ -2,6 +2,8 @@ module Helios.Core.Database
 
 open Microsoft.EntityFrameworkCore
 open Helios.Core.Models.EnergyMeasurement
+open System.IO
+open System
 
 type HeliosDatabaseContext(options: DbContextOptions<HeliosDatabaseContext>) =
     inherit DbContext(options)
@@ -20,7 +22,7 @@ type HeliosDatabaseContext(options: DbContextOptions<HeliosDatabaseContext>) =
         let optionsBuilder = DbContextOptionsBuilder<HeliosDatabaseContext>()
 
         optionsBuilder.UseSqlite(
-            "Data Source=../Helios.Core/Helios.sqlite",
+            "Data Source=Helios.sqlite",
             (fun f -> f.MigrationsAssembly("Helios.Migrations") |> ignore)
         )
         |> ignore

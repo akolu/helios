@@ -40,7 +40,7 @@ module UI =
         AnsiConsole.WriteLine()
         AnsiConsole.WriteLine()
 
-        FigletText(FigletFont.Load("assets/kban.flf"), "Helios") |> AnsiConsole.Write
+        FigletText(FigletFont.Load("kban.flf"), "Helios") |> AnsiConsole.Write
 
     let serviceTable () =
         Table()

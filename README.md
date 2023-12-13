@@ -4,23 +4,26 @@ Helios is a console application designed to import energy measurement data into 
 
 ## Database
 
-Helios uses SQLite database to store energy measurements. The database needs to be created before running the application and Entity Framework Core migrations need to be applied:
-
-1. Install `dotnet-ef` tool using `dotnet tool install --global dotnet-ef` command
-2. Run `dotnet ef database update --startup-project ../Helios.Core` command in `src/Helios.Migrations` directory
+Helios uses SQLite database to store energy measurements. The application will create a database if it does not exist and run any missing migrations.
 
 ### Schema changes
 
 When making changes to the database schema, the following steps need to be taken:
 
-1. Add a new migration using `dotnet ef migrations add [name] --startup-project ../Helios.Core` command in `src/Helios.Migrations` directory
-2. Apply the migration using `dotnet ef database update --startup-project ../Helios.Core` command in `src/Helios.Migrations` directory
+1. Install `dotnet-ef` tool using `dotnet tool install --global dotnet-ef` command
+2. Add a new migration using `dotnet ef migrations add [name] --project ../Helios.Migrations` command in `src/Helios.Core` directory
+3. Apply all migrations using `dotnet ef database update` command in `src/Helios.Core` directory
 
 ## Development
 
 1. Clone the repo
 2. Initialize user secrets using `dotnet user-secrets init` command in `src/Helios.Core` directory
 3. Add required secrets with `dotnet user-secrets set "[key]" "[value]"` command. For example: `dotnet user-secrets set "FusionSolar:Username" "testUser"`
+
+## Publishing
+
+1. Build the solution using `dotnet build` command in project root directory
+2. Run `dotnet publish --configuration Release --runtime osx-arm64 --self-contained true -p:PublishSingleFile=true -p:DebugType=none` in `src/Helios.Console` directory to publish a single file executable for Apple Silicon
 
 ### User secrets
 

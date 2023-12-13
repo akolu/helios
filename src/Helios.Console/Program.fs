@@ -12,20 +12,18 @@ let rec mainLoop state =
         | FusionSolar -> state.App |> importFusionSolar (askDate "Date: ")
 
         mainLoop (state)
-    | Quit -> ()
-
-    let confirm = AnsiConsole.Confirm("Are you sure you want to quit?")
-    if confirm then () else mainLoop (state)
+    | Quit ->
+        let confirm = AnsiConsole.Confirm("Are you sure you want to quit?")
+        if confirm then () else mainLoop (state)
 
 [<EntryPoint>]
 let main argv =
     figlet ()
 
-    match argv with
-    | [| dbPath |] ->
-        let helios = App.Init(dbPath)
-        mainLoop ({ App = helios })
-        0
-    | _ ->
-        (printfn "Usage: dotnet run <dbPath>")
-        1
+    let helios =
+        match argv with
+        | [| dbPath |] -> App.Init(dbPath)
+        | _ -> App.Init()
+
+    mainLoop ({ App = helios })
+    0

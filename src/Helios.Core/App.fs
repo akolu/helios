@@ -18,22 +18,32 @@ type Secrets =
            StationCode: string |} }
 
 module Main =
+    open System.IO
+    open System.Reflection
 
     type App =
         { Repository: EnergyMeasurementRepository
           Config: IConfiguration
           FusionSolar: FusionSolar.FusionSolar }
 
-        static member Init(dbPath) =
+        static member Init(?dbPath) =
             let serviceCollection = new ServiceCollection()
 
             serviceCollection.AddDbContext<HeliosDatabaseContext>(fun options ->
-                options.UseSqlite(sprintf "Data Source=%s" dbPath) |> ignore)
+                options.UseSqlite(
+                    sprintf "Data Source=%s" (defaultArg dbPath "Helios.sqlite"),
+                    fun f -> f.MigrationsAssembly("Helios.Migrations") |> ignore
+                )
+                |> ignore)
             |> ignore
 
             // Build the service provider
             let serviceProvider = serviceCollection.BuildServiceProvider()
             let dbContext = serviceProvider.GetService<HeliosDatabaseContext>()
+
+            // run database migrations
+            dbContext.Database.Migrate() |> ignore
+
             let repository = new EnergyMeasurementRepository(dbContext)
 
             let configuration =

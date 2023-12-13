@@ -13,7 +13,14 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Include="kban.flf">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Helios.Core\Helios.Core.fsproj" />
+    <ProjectReference Include="..\Helios.Migrations\Helios.Migrations.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,7 +1,7 @@
 # SQLite db file
-src/Helios.Core/Helios.sqlite
-src/Helios.Core/Helios.sqlite-shm
-src/Helios.Core/Helios.sqlite-wal
+src/**/Helios.sqlite
+src/**/Helios.sqlite-shm
+src/**/Helios.sqlite-wal
 
 # Fable generated files
 .fable
