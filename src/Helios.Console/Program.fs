@@ -10,6 +10,7 @@ let rec mainLoop state =
     | Import ->
         match importPrompt () with
         | FusionSolar -> state.App |> importFusionSolar (askDate "Date: ")
+        | EntsoE -> state.App |> importEntsoE (askDate "Date from: ", askDate "Date to: ")
 
         mainLoop (state)
     | Quit ->

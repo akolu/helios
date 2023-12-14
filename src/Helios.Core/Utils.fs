@@ -15,3 +15,5 @@ let tap f x =
 
 let takeLast num (xs: 'a list) =
     xs |> List.rev |> List.take (Math.Min(xs.Length, num)) |> List.rev
+
+let dateTimeToUTCISOString (date: DateTimeOffset) = date.ToUniversalTime().ToString("o")

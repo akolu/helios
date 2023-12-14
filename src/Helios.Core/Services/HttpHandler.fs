@@ -1,9 +1,13 @@
 ﻿namespace Helios.Core.Services
 
+open System
 open System.Text
 open System.Text.Json
+open System.Web
 open System.Net.Http
 open System.Threading.Tasks
+open System.Xml.Linq
+
 
 module HttpUtils =
     let toJsonStringContent (data: obj) =
@@ -35,6 +39,30 @@ module HttpUtils =
             | None -> Error "Cookie not found"
         else
             Error "Cookie not found"
+
+    let parseXmlBody (response: HttpResponseMessage) =
+        async {
+            let! content = response.Content.ReadAsStringAsync() |> Async.AwaitTask
+
+            match content with
+            | null -> return Error "Response body is null"
+            | xml ->
+                try
+                    let doc = XDocument.Parse(xml)
+                    return Ok doc
+                with :? Xml.XmlException as ex ->
+                    return Error ex.Message
+        }
+        |> Async.RunSynchronously
+
+    let buildUrlWithParams (url: string) (parameters: Map<string, string>) =
+        let uriBuilder = new UriBuilder(url)
+        let query = HttpUtility.ParseQueryString(uriBuilder.Query)
+
+        parameters |> Map.iter (fun key value -> query.[key] <- value)
+
+        uriBuilder.Query <- query.ToString()
+        uriBuilder.Uri.AbsoluteUri
 
 type IHttpHandler =
     abstract member Get: string -> Result<HttpResponseMessage, string>

@@ -18,13 +18,12 @@ type Secrets =
            StationCode: string |} }
 
 module Main =
-    open System.IO
-    open System.Reflection
 
     type App =
         { Repository: EnergyMeasurementRepository
           Config: IConfiguration
-          FusionSolar: FusionSolar.FusionSolar }
+          FusionSolar: FusionSolar.FusionSolar
+          EntsoE: EntsoE.EntsoE }
 
         static member Init(?dbPath) =
             let serviceCollection = new ServiceCollection()
@@ -61,7 +60,12 @@ module Main =
                     { httpClient = new HttpHandler()
                       logger = ConsoleLogger()
                       userName = configuration.GetSection("FusionSolar").["UserName"]
-                      systemCode = configuration.GetSection("FusionSolar").["Password"] } }
+                      systemCode = configuration.GetSection("FusionSolar").["Password"] }
+              EntsoE =
+                EntsoE.init
+                    { httpClient = new HttpHandler()
+                      logger = ConsoleLogger()
+                      securityToken = configuration.GetSection("EntsoE").["SecurityToken"] } }
 
     let importFusionSolar (date: DateTimeOffset) (app: App) =
         app.FusionSolar
@@ -77,3 +81,11 @@ module Main =
             r |> List.iter (fun x -> printfn "%A" (x.ToString())))
         |> app.Repository.Save
         |> tap (fun _ -> printfn "Successfully saved data to database")
+
+    let importEntsoE (fromDate: DateTimeOffset, toDate: DateTimeOffset) (app: App) =
+        app.EntsoE
+        |> tap (fun _ ->
+            printfn "Successfully initialized EntsoE client, getting data from date %A to %A" fromDate toDate)
+        |> EntsoE.getDayAheadPrices (fromDate, toDate)
+        |> tap (fun _ -> printfn "Successfully got data from EntsoE")
+        |> ignore

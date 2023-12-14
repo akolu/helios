@@ -211,3 +211,19 @@ let ``parseJsonBody deserializes FusionSolar.GetHourlyData.ResponseBody correctl
     match HttpUtils.parseJsonBody<FusionSolar.Types.GetHourlyData.ResponseBody> (responseMessage) with
     | Ok responseBody -> Assert.Equal(responseBody, expected)
     | Error err -> Assert.True(false, err)
+
+[<Fact>]
+let ``buildUrlWithParams should build url with query string correctly`` () =
+    // Arrange
+    let url = "http://test.com/"
+
+    let parameters =
+        Map.ofList
+            [ ("name", "test")
+              ("timeInterval", "2020-01-01T20:00:00Z/2020-01-01T21:00:00Z") ]
+
+    // Act
+    let result = HttpUtils.buildUrlWithParams url parameters
+
+    // Assert
+    Assert.Equal("http://test.com/?name=test&timeInterval=2020-01-01T20%3a00%3a00Z%2f2020-01-01T21%3a00%3a00Z", result)

@@ -43,4 +43,5 @@ When running the application in production, the following environment variables 
 FUSIONSOLAR__USERNAME
 FUSIONSOLAR__PASSWORD
 FUSIONSOLAR__STATIONCODE
+ENTSOE__SECURITYTOKEN
 ```

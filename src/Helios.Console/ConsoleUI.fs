@@ -9,7 +9,9 @@ module Commands =
         | Import
         | Quit
 
-    type Import = | FusionSolar
+    type Import =
+        | FusionSolar
+        | EntsoE
 
     let mainPrompt () =
         AnsiConsole.WriteLine()
@@ -22,7 +24,7 @@ module Commands =
     let importPrompt () =
         SelectionPrompt<Import>()
         |> tap (fun p -> p.Title <- "Please select one or more items: ")
-        |> fun p -> p.AddChoices [ FusionSolar ]
+        |> fun p -> p.AddChoices [ FusionSolar; EntsoE ]
         |> AnsiConsole.Prompt
 
     let rec askDate text =
