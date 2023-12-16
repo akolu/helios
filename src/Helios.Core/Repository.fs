@@ -53,3 +53,7 @@ type ElectricitySpotPriceRepository(db: HeliosDatabaseContext) =
 type Repositories =
     { EnergyMeasurement: EnergyMeasurementRepository
       ElectricitySpotPrice: ElectricitySpotPriceRepository }
+
+    static member Init(db: HeliosDatabaseContext) =
+        { EnergyMeasurement = new EnergyMeasurementRepository(db)
+          ElectricitySpotPrice = new ElectricitySpotPriceRepository(db) }

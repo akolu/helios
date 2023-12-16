@@ -2,9 +2,57 @@
 
 Helios is a console application designed to import energy measurement data into a database.
 
+## Domain models
+
+### EnergyMeasurement
+
+Represents measurements of energy production or consumption (indicated by FlowType) at a given hour. FlowType is a discriminated union that is mapped to INTEGER in database and gets a value of `0` for energy production and `1` for energy consumption.
+
+```mermaid
+classDiagram
+    class EnergyMeasurement {
+        -DateTimeOffset Time
+        -FlowType FlowType
+        -double KWh
+        +ToString(): string
+        +Equals(obj: obj): bool
+        +GetHashCode(): int
+    }
+```
+
+### ElectricitySpotPrice
+
+Represents the price of electricity at a given hour. The price is in Euro cents per kilowatt hour.
+
+```mermaid
+classDiagram
+    class ElectricitySpotPrice {
+        -DateTimeOffset Time
+        -decimal EuroCentsPerKWh
+        +ToString(): string
+        +Equals(obj: obj): bool
+        +GetHashCode(): int
+    }
+```
+
 ## Database
 
 Helios uses SQLite database to store energy measurements. The application will create a database if it does not exist and run any missing migrations.
+
+### Database tables
+
+```mermaid
+erDiagram
+    EnergyMeasurement {
+        TEXT Time
+        INTEGER FlowType
+        REAL KWh
+    }
+    ElectricitySpotPrice {
+        TEXT Time
+        TEXT EuroCentsPerKWh
+    }
+```
 
 ### Schema changes
 

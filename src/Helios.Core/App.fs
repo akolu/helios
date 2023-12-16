@@ -19,6 +19,34 @@ type Secrets =
 
 module Main =
 
+    let private initDbContext (dbPath: string) =
+        let serviceCollection = new ServiceCollection()
+
+        serviceCollection.AddDbContext<HeliosDatabaseContext>(fun options ->
+            options.UseSqlite(
+                sprintf "Data Source=%s" dbPath,
+                fun f -> f.MigrationsAssembly("Helios.Migrations") |> ignore
+            )
+            |> ignore)
+        |> ignore
+
+        // Build the service provider
+        let serviceProvider = serviceCollection.BuildServiceProvider()
+        let dbContext = serviceProvider.GetService<HeliosDatabaseContext>()
+
+        // run database migrations
+        dbContext.Database.Migrate() |> ignore
+
+        dbContext
+
+    let private initConfiguration () =
+        (new ConfigurationBuilder())
+            .SetBasePath(AppContext.BaseDirectory)
+            // .AddJsonFile("appsettings.json", optional = false, reloadOnChange = true)
+            .AddUserSecrets<Secrets>() // NOTE: without type parameter, it doesn't work
+            .AddEnvironmentVariables()
+            .Build()
+
     type App =
         { Repositories: Repositories
           Config: IConfiguration
@@ -26,47 +54,23 @@ module Main =
           EntsoE: EntsoE.EntsoE }
 
         static member Init(?dbPath) =
-            let serviceCollection = new ServiceCollection()
+            let dbContext = initDbContext (defaultArg dbPath "Helios.sqlite")
+            let configuration = initConfiguration ()
+            let httpHandler = HttpHandler()
+            let logger = ConsoleLogger()
 
-            serviceCollection.AddDbContext<HeliosDatabaseContext>(fun options ->
-                options.UseSqlite(
-                    sprintf "Data Source=%s" (defaultArg dbPath "Helios.sqlite"),
-                    fun f -> f.MigrationsAssembly("Helios.Migrations") |> ignore
-                )
-                |> ignore)
-            |> ignore
-
-            // Build the service provider
-            let serviceProvider = serviceCollection.BuildServiceProvider()
-            let dbContext = serviceProvider.GetService<HeliosDatabaseContext>()
-
-            // run database migrations
-            dbContext.Database.Migrate() |> ignore
-
-            let repositories =
-                { EnergyMeasurement = new EnergyMeasurementRepository(dbContext)
-                  ElectricitySpotPrice = new ElectricitySpotPriceRepository(dbContext) }
-
-            let configuration =
-                (new ConfigurationBuilder())
-                    .SetBasePath(AppContext.BaseDirectory)
-                    // .AddJsonFile("appsettings.json", optional = false, reloadOnChange = true)
-                    .AddUserSecrets<Secrets>() // NOTE: without type parameter, it doesn't work
-                    .AddEnvironmentVariables()
-                    .Build()
-
-            { Repositories = repositories
+            { Repositories = Repositories.Init(dbContext)
               Config = configuration
               FusionSolar =
                 FusionSolar.init
-                    { httpClient = new HttpHandler()
-                      logger = ConsoleLogger()
+                    { httpClient = httpHandler
+                      logger = logger
                       userName = configuration.GetSection("FusionSolar").["UserName"]
                       systemCode = configuration.GetSection("FusionSolar").["Password"] }
               EntsoE =
                 EntsoE.init
-                    { httpClient = new HttpHandler()
-                      logger = ConsoleLogger()
+                    { httpClient = httpHandler
+                      logger = logger
                       securityToken = configuration.GetSection("EntsoE").["SecurityToken"] } }
 
     let importFusionSolar (date: DateTimeOffset) (app: App) =
