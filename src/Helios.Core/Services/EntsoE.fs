@@ -16,7 +16,7 @@ module Types =
         { startDt: DateTimeOffset
           endDt: DateTimeOffset }
 
-    type TimeSeriesPoint = { position: int; priceAmount: double }
+    type TimeSeriesPoint = { position: int; priceAmount: decimal }
 
     type TimeSeriesPeriod =
         { timeInterval: TimeSeriesPeriodInterval
@@ -43,7 +43,7 @@ let private parsePoints (ns: XNamespace) (element: XElement) =
     element.Descendants(ns + "Point")
     |> Seq.map (fun p ->
         { Types.TimeSeriesPoint.position = int (p.Element(ns + "position").Value)
-          Types.TimeSeriesPoint.priceAmount = double (p.Element(ns + "price.amount").Value) })
+          Types.TimeSeriesPoint.priceAmount = decimal (p.Element(ns + "price.amount").Value) })
     |> Seq.toList
 
 let private parsePeriod (ns: XNamespace) (period: XElement) =

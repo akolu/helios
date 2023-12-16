@@ -20,7 +20,7 @@ type Secrets =
 module Main =
 
     type App =
-        { Repository: EnergyMeasurementRepository
+        { Repositories: Repositories
           Config: IConfiguration
           FusionSolar: FusionSolar.FusionSolar
           EntsoE: EntsoE.EntsoE }
@@ -43,7 +43,9 @@ module Main =
             // run database migrations
             dbContext.Database.Migrate() |> ignore
 
-            let repository = new EnergyMeasurementRepository(dbContext)
+            let repositories =
+                { EnergyMeasurement = new EnergyMeasurementRepository(dbContext)
+                  ElectricitySpotPrice = new ElectricitySpotPriceRepository(dbContext) }
 
             let configuration =
                 (new ConfigurationBuilder())
@@ -53,7 +55,7 @@ module Main =
                     .AddEnvironmentVariables()
                     .Build()
 
-            { Repository = repository
+            { Repositories = repositories
               Config = configuration
               FusionSolar =
                 FusionSolar.init
@@ -73,19 +75,26 @@ module Main =
         |> FusionSolar.getHourlyData
             { stationCodes = app.Config.GetSection("FusionSolar").["StationCode"]
               collectTime = date.ToUnixTimeMilliseconds() }
-        |> tap (fun _ -> printfn "Successfully got data from date %A" date)
+        |> tap (fun _ -> printfn "Successfully got FusionSolar data from date %A" date)
         |> unwrap
         |> EnergyMeasurement.fromFusionSolarResponse
         |> tap (fun r ->
             printfn "Successfully parsed data from FusionSolar response:"
             r |> List.iter (fun x -> printfn "%A" (x.ToString())))
-        |> app.Repository.Save
+        |> app.Repositories.EnergyMeasurement.Save
         |> tap (fun _ -> printfn "Successfully saved data to database")
 
     let importEntsoE (fromDate: DateTimeOffset, toDate: DateTimeOffset) (app: App) =
         app.EntsoE
         |> tap (fun _ ->
-            printfn "Successfully initialized EntsoE client, getting data from date %A to %A" fromDate toDate)
+            printfn "Successfully initialized ENTSO-E client, getting data from date %A to %A" fromDate toDate)
         |> EntsoE.getDayAheadPrices (fromDate, toDate)
-        |> tap (fun _ -> printfn "Successfully got data from EntsoE")
-        |> ignore
+        |> tap (fun _ -> printfn "Successfully got ENTSO-E data from %A to %A" fromDate toDate)
+        |> unwrap
+        |> ElectricitySpotPrice.fromEntsoETransmissionDayAheadPricesResponse
+        |> List.filter (fun x -> x.Time >= fromDate && x.Time <= toDate)
+        |> tap (fun r ->
+            printfn "Successfully parsed data from ENTSO-E response:"
+            r |> List.iter (fun x -> printfn "%A" (x.ToString())))
+        |> app.Repositories.ElectricitySpotPrice.Save
+        |> tap (fun _ -> printfn "Successfully saved data to database")

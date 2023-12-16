@@ -2,6 +2,7 @@ module Helios.Core.Repository
 
 open Helios.Core.Models.EnergyMeasurement
 open Helios.Core.Database
+open Helios.Core.Models.ElectricitySpotPrice
 
 type EnergyMeasurementRepository(db: HeliosDatabaseContext) =
     member _.Find(startDate, endDate, flowType) =
@@ -26,3 +27,29 @@ type EnergyMeasurementRepository(db: HeliosDatabaseContext) =
 
         db.EnergyMeasurements.AddRange(newRows)
         db.SaveChanges() |> ignore
+
+type ElectricitySpotPriceRepository(db: HeliosDatabaseContext) =
+    member _.Find(startDate, endDate) =
+        db.ElectricitySpotPrices
+        |> Seq.filter (fun m -> m.Time >= startDate && m.Time <= endDate)
+        |> Seq.toList
+
+    member _.Save(prices: ElectricitySpotPrice list) =
+        let existingPrices =
+            db.ElectricitySpotPrices
+            |> Seq.filter (fun m -> prices |> List.exists (fun y -> y.Time = m.Time))
+            |> Seq.toList
+
+        let existingRows, newRows =
+            prices
+            |> List.partition (fun row -> existingPrices |> List.exists (fun m -> row.Time = m.Time))
+
+        existingRows
+        |> List.iter (fun row -> printfn "Warning: ElectricitySpotPrice %s already exists, ignoring" (row.ToString()))
+
+        db.ElectricitySpotPrices.AddRange(newRows)
+        db.SaveChanges() |> ignore
+
+type Repositories =
+    { EnergyMeasurement: EnergyMeasurementRepository
+      ElectricitySpotPrice: ElectricitySpotPriceRepository }

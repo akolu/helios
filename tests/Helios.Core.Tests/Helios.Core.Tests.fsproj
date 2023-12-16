@@ -10,6 +10,7 @@
   <ItemGroup>
     <Compile Include="TestUtils.fs" />
     <Compile Include="Models/EnergyMeasurementTests.fs" />
+    <Compile Include="Models/ElectricitySpotPriceTests.fs" />
     <Compile Include="LoggerTests.fs" />
     <Compile Include="HttpHandlerTests.fs" />
     <Compile Include="FusionSolarTests.fs" />

@@ -126,19 +126,19 @@ let ``getDayAheadPrices should return TimeSeriesPeriod list parsed from returned
                 TimeSeriesPeriodInterval.endDt = DateTimeOffset.Parse("2023-03-26T01:00Z") }
             TimeSeriesPeriod.points =
               [ { TimeSeriesPoint.position = 1
-                  TimeSeriesPoint.priceAmount = 39.66 }
+                  TimeSeriesPoint.priceAmount = 39.66m }
                 { TimeSeriesPoint.position = 2
-                  TimeSeriesPoint.priceAmount = 39.23 }
+                  TimeSeriesPoint.priceAmount = 39.23m }
                 { TimeSeriesPoint.position = 3
-                  TimeSeriesPoint.priceAmount = 40.12 } ] }
+                  TimeSeriesPoint.priceAmount = 40.12m } ] }
           { TimeSeriesPeriod.timeInterval =
               { TimeSeriesPeriodInterval.startDt = DateTimeOffset.Parse("2023-03-27T00:00Z")
                 TimeSeriesPeriodInterval.endDt = DateTimeOffset.Parse("2023-03-27T01:00Z") }
             TimeSeriesPeriod.points =
               [ { TimeSeriesPoint.position = 1
-                  TimeSeriesPoint.priceAmount = 42.13 }
+                  TimeSeriesPoint.priceAmount = 42.13m }
                 { TimeSeriesPoint.position = 2
-                  TimeSeriesPoint.priceAmount = 40.31 } ] } ]
+                  TimeSeriesPoint.priceAmount = 40.31m } ] } ]
 
     match result with
     | Ok res -> Assert.Equal<TimeSeriesPeriod list>(res, expected)

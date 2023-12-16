@@ -12,6 +12,7 @@
     <Compile Include="Services/HttpHandler.fs" />
     <Compile Include="Services/FusionSolar.fs" />
     <Compile Include="Services/EntsoE.fs" />
+    <Compile Include="Models/ElectricitySpotPrice.fs" />
     <Compile Include="Models/EnergyMeasurement.fs" />
     <Compile Include="Database.fs" />
     <Compile Include="Repository.fs" /> 
