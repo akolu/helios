@@ -1,13 +1,13 @@
 module FusionSolarTests
 
-open Moq
 open Xunit
 open Helios.Core.Services
 open System.Net.Http
 open System.Net
 open System.Text
-open Helios.Core.Logger
 open FusionSolar.Types
+open TestUtils
+open Moq
 
 module internal DataMocks =
     let LoginSuccessResponse: Login.ResponseBody =
@@ -92,10 +92,6 @@ module internal ResponseMocks =
             Content = new StringContent(Json.JsonSerializer.Serialize(DataMocks.GetHourlyDataResponse), Encoding.UTF8)
         )
 
-type MockLogger() =
-    interface ILogger with
-        member _.LogJson(data: Result<'T, string>) = ()
-
 let mockHttpClientWithResponse (responses: Map<string, Result<HttpResponseMessage, string>>) =
     let mock = new Mock<IHttpHandler>(MockBehavior.Strict)
 
@@ -125,7 +121,7 @@ let ``Init function should initialize record with config data & isLoggedIn to fa
     Assert.Equal(config, result.config)
 
 [<Fact>]
-let ``getStations should call login first if isLoggedIn is false`` () =
+let ``getStations should call login first if isLoggedIn is false, should return stations response`` () =
     // Arrange
     let mock =
         mockHttpClientWithResponse (
@@ -156,7 +152,7 @@ let ``getStations should call login first if isLoggedIn is false`` () =
     mock.VerifyAll()
 
 [<Fact>]
-let ``getStations should not call login if isLoggedIn is true`` () =
+let ``getStations should not call login if isLoggedIn is true, should return stations response`` () =
     // Arrange
     let mock =
         mockHttpClientWithResponse (
@@ -182,7 +178,7 @@ let ``getStations should not call login if isLoggedIn is true`` () =
     mock.VerifyAll()
 
 [<Fact>]
-let ``getHourlyData should call login first if isLoggedIn is false`` () =
+let ``getHourlyData should call login first if isLoggedIn is false, should return hourly data response`` () =
     // Arrange
     let mock =
         mockHttpClientWithResponse (
@@ -214,7 +210,7 @@ let ``getHourlyData should call login first if isLoggedIn is false`` () =
     mock.VerifyAll()
 
 [<Fact>]
-let ``getHourlyData should not call login if isLoggedIn is true`` () =
+let ``getHourlyData should not call login if isLoggedIn is true, should return hourly data response`` () =
     // Arrange
     let mock =
         mockHttpClientWithResponse (

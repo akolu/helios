@@ -13,6 +13,17 @@ let tap f x =
     f x
     x
 
+let rec traverse f =
+    function
+    | [] -> Ok []
+    | x :: xs ->
+        match f x with
+        | Error e -> Error e
+        | Ok y ->
+            match traverse f xs with
+            | Error e -> Error e
+            | Ok ys -> Ok(y :: ys)
+
 let takeLast num (xs: 'a list) =
     xs |> List.rev |> List.take (Math.Min(xs.Length, num)) |> List.rev
 
