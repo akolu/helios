@@ -12,6 +12,7 @@ module Commands =
     type Import =
         | FusionSolar
         | EntsoE
+        | Fingrid
 
     let mainPrompt () =
         AnsiConsole.WriteLine()
@@ -24,7 +25,7 @@ module Commands =
     let importPrompt () =
         SelectionPrompt<Import>()
         |> tap (fun p -> p.Title <- "Please select one or more items: ")
-        |> fun p -> p.AddChoices [ FusionSolar; EntsoE ]
+        |> fun p -> p.AddChoices [ FusionSolar; EntsoE; Fingrid ]
         |> AnsiConsole.Prompt
 
     let rec askDate text =
@@ -36,6 +37,23 @@ module Commands =
         else
             AnsiConsole.MarkupLine("[red]Invalid Date. Input date in dd.MM.yyyy format[/]")
             askDate text
+
+    let private listCsvFilesWithExtension =
+        let exePath = Reflection.Assembly.GetExecutingAssembly().Location
+        let directory = System.IO.Path.GetDirectoryName(exePath)
+        let files = System.IO.Directory.GetFiles(directory, "*.csv")
+        files |> List.ofArray
+
+    let csvPrompt =
+        match listCsvFilesWithExtension with
+        | [] -> None
+        | files ->
+            Some(
+                SelectionPrompt<string>()
+                |> tap (fun p -> p.Title <- "Please select a CSV file: ")
+                |> fun p -> p.AddChoices files
+                |> AnsiConsole.Prompt
+            )
 
 module UI =
     let figlet () =

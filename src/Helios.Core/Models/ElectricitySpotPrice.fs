@@ -22,13 +22,13 @@ type ElectricitySpotPrice(time: DateTimeOffset, euroCentsPerKWh: decimal) =
 
 let private validateTimeSeries (data: TimeSeriesPeriod) (prices: ElectricitySpotPrice list) =
     let hoursDifference =
-        (data.timeInterval.endDt - data.timeInterval.startDt).TotalHours
+        (data.TimeInterval.EndDt - data.TimeInterval.StartDt).TotalHours
 
     if float (List.length prices) <> hoursDifference then
         failwith (
             sprintf
                 "Inconsistent time series in time interval %A: number of points does not match time interval. Expected: %s, actual: %s"
-                data.timeInterval
+                data.TimeInterval
                 (string hoursDifference)
                 (string (List.length prices))
         )
@@ -38,11 +38,11 @@ let private eurPerMWhToEuroCentsPerKWh (eurPerMWh: decimal) = eurPerMWh * 100m /
 let fromEntsoETransmissionDayAheadPricesResponse (timeSeries: TimeSeriesPeriod list) : ElectricitySpotPrice list =
     timeSeries
     |> List.map (fun data ->
-        data.points
+        data.Points
         |> List.map (fun point ->
             new ElectricitySpotPrice(
-                time = data.timeInterval.startDt.AddHours(double (point.position - 1)),
-                euroCentsPerKWh = eurPerMWhToEuroCentsPerKWh point.priceAmount
+                time = data.TimeInterval.StartDt.AddHours(double (point.Position - 1)),
+                euroCentsPerKWh = eurPerMWhToEuroCentsPerKWh point.PriceAmount
             ))
         |> tap (validateTimeSeries data))
     |> List.fold (fun acc x -> acc @ x) []

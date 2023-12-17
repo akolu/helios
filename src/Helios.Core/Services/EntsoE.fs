@@ -13,44 +13,44 @@ module Constants =
 module Types =
 
     type TimeSeriesPeriodInterval =
-        { startDt: DateTimeOffset
-          endDt: DateTimeOffset }
+        { StartDt: DateTimeOffset
+          EndDt: DateTimeOffset }
 
-    type TimeSeriesPoint = { position: int; priceAmount: decimal }
+    type TimeSeriesPoint = { Position: int; PriceAmount: decimal }
 
     type TimeSeriesPeriod =
-        { timeInterval: TimeSeriesPeriodInterval
-          points: TimeSeriesPoint list }
+        { TimeInterval: TimeSeriesPeriodInterval
+          Points: TimeSeriesPoint list }
 
 type Config =
-    { httpClient: IHttpHandler
-      logger: ILogger
-      securityToken: string }
+    { HttpClient: IHttpHandler
+      Logger: ILogger
+      SecurityToken: string }
 
-type EntsoE = { config: Config }
+type EntsoE = { Config: Config }
 
-let init (config: Config) = { config = config }
+let init (config: Config) = { Config = config }
 
 let private parseTimeInterval (ns: XNamespace) (element: XElement) =
     match Seq.tryHead (element.Descendants(ns + "timeInterval")) with
     | None -> Error "TimeInterval element not found"
     | Some interval ->
         Ok
-            { Types.TimeSeriesPeriodInterval.startDt = DateTimeOffset.Parse(interval.Element(ns + "start").Value)
-              Types.TimeSeriesPeriodInterval.endDt = DateTimeOffset.Parse(interval.Element(ns + "end").Value) }
+            { Types.TimeSeriesPeriodInterval.StartDt = DateTimeOffset.Parse(interval.Element(ns + "start").Value)
+              Types.TimeSeriesPeriodInterval.EndDt = DateTimeOffset.Parse(interval.Element(ns + "end").Value) }
 
 let private parsePoints (ns: XNamespace) (element: XElement) =
     element.Descendants(ns + "Point")
     |> Seq.map (fun p ->
-        { Types.TimeSeriesPoint.position = int (p.Element(ns + "position").Value)
-          Types.TimeSeriesPoint.priceAmount = decimal (p.Element(ns + "price.amount").Value) })
+        { Types.TimeSeriesPoint.Position = int (p.Element(ns + "position").Value)
+          Types.TimeSeriesPoint.PriceAmount = decimal (p.Element(ns + "price.amount").Value) })
     |> Seq.toList
 
 let private parsePeriod (ns: XNamespace) (period: XElement) =
     parseTimeInterval ns period
     |> Result.map (fun timeInterval ->
-        { Types.TimeSeriesPeriod.timeInterval = timeInterval
-          Types.TimeSeriesPeriod.points = parsePoints ns period })
+        { Types.TimeSeriesPeriod.TimeInterval = timeInterval
+          Types.TimeSeriesPeriod.Points = parsePoints ns period })
 
 let private parseTimeSeries (ns: XNamespace) (element: XElement) =
     match Seq.tryHead (element.Descendants(ns + "Period")) with
@@ -65,7 +65,7 @@ let private toTimeSeriesPeriodList (doc: XDocument) =
     |> traverse (parseTimeSeries ns)
 
 let getDayAheadPrices (dateFrom: DateTimeOffset, dateTo: DateTimeOffset) (this: EntsoE) =
-    this.config.httpClient.Get(
+    this.Config.HttpClient.Get(
         HttpUtils.buildUrlWithParams
             Constants.API_URL
             (Map.ofList
@@ -73,7 +73,7 @@ let getDayAheadPrices (dateFrom: DateTimeOffset, dateTo: DateTimeOffset) (this: 
                   "in_Domain", Constants.AREA_CODE_FINLAND
                   "out_Domain", Constants.AREA_CODE_FINLAND
                   "timeInterval", dateTimeToUTCISOString dateFrom + "/" + dateTimeToUTCISOString dateTo
-                  "securityToken", this.config.securityToken ])
+                  "securityToken", this.Config.SecurityToken ])
     )
     >>= HttpUtils.parseXmlBody
     >>= toTimeSeriesPeriodList

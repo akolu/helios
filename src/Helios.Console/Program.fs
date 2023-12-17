@@ -11,6 +11,10 @@ let rec mainLoop state =
         match importPrompt () with
         | FusionSolar -> state.App |> importFusionSolar (askDate "Date: ")
         | EntsoE -> state.App |> importEntsoE (askDate "Date from: ", askDate "Date to: ")
+        | Fingrid ->
+            match csvPrompt with
+            | None -> AnsiConsole.MarkupLine("[red]No CSV files found in the current directory[/]")
+            | Some csvPath -> state.App |> importFingrid csvPath |> ignore
 
         mainLoop (state)
     | Quit ->

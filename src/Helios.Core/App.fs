@@ -10,14 +10,21 @@ open Helios.Core.Utils
 open Repository
 open Logger
 open System
+open FSharp.Data
+
 
 type Secrets =
     { FusionSolar:
         {| Username: string
            Password: string
-           StationCode: string |} }
+           StationCode: string |}
+      EntsoE: {| SecurityToken: string |}
+      Fingrid:
+          {| SiteIdentifier_Consumption: string
+             SiteIdentifier_Production: string |} }
 
 module Main =
+    open Helios.Core.Models.EnergyMeasurement
 
     let private initDbContext (dbPath: string) =
         let serviceCollection = new ServiceCollection()
@@ -51,7 +58,8 @@ module Main =
         { Repositories: Repositories
           Config: IConfiguration
           FusionSolar: FusionSolar.FusionSolar
-          EntsoE: EntsoE.EntsoE }
+          EntsoE: EntsoE.EntsoE
+          Fingrid: Fingrid.Fingrid }
 
         static member Init(?dbPath) =
             let dbContext = initDbContext (defaultArg dbPath "Helios.sqlite")
@@ -63,15 +71,21 @@ module Main =
               Config = configuration
               FusionSolar =
                 FusionSolar.init
-                    { httpClient = httpHandler
-                      logger = logger
-                      userName = configuration.GetSection("FusionSolar").["UserName"]
-                      systemCode = configuration.GetSection("FusionSolar").["Password"] }
+                    { HttpClient = httpHandler
+                      Logger = logger
+                      UserName = configuration.GetSection("FusionSolar").["UserName"]
+                      SystemCode = configuration.GetSection("FusionSolar").["Password"] }
               EntsoE =
                 EntsoE.init
-                    { httpClient = httpHandler
-                      logger = logger
-                      securityToken = configuration.GetSection("EntsoE").["SecurityToken"] } }
+                    { HttpClient = httpHandler
+                      Logger = logger
+                      SecurityToken = configuration.GetSection("EntsoE").["SecurityToken"] }
+              Fingrid =
+                Fingrid.init
+                    { Logger = logger
+                      SiteIdentifiers =
+                        { Consumption = configuration.GetSection("Fingrid").["SiteIdentifier_Consumption"]
+                          Production = configuration.GetSection("Fingrid").["SiteIdentifier_Production"] } } }
 
     let importFusionSolar (date: DateTimeOffset) (app: App) =
         app.FusionSolar
@@ -102,3 +116,17 @@ module Main =
             r |> List.iter (fun x -> printfn "%A" (x.ToString())))
         |> app.Repositories.ElectricitySpotPrice.Save
         |> tap (fun _ -> printfn "Successfully saved data to database")
+
+    let importFingrid (filePath: string) (app: App) =
+        if not (IO.File.Exists filePath) then
+            Error(sprintf "File does not exist: %s" filePath)
+        else
+            app.Fingrid
+            |> Fingrid.parseNetEnergyConsumptionFromDatahubCsv (CsvFile.Load(filePath, ";"))
+            |> tap (fun _ -> printfn "Successfully parsed data from Fingrid CSV file %s" filePath)
+            |> List.map (fun (t, kwh) -> new EnergyMeasurement(time = t, flowType = FlowType.Consumption, kwh = kwh))
+            |> tap (fun r ->
+                printfn "Successfully parsed data from Fingrid response:"
+                r |> List.iter (fun x -> printfn "%A" (x.ToString())))
+            |> app.Repositories.EnergyMeasurement.Save
+            |> Ok

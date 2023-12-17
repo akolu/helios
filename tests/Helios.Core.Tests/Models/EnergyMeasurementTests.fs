@@ -29,5 +29,5 @@ let ``fromFusionSolarResponse should map response to EnergyMeasurement list`` ()
                     ongrid_power = None } } ] }
 
     let expected = [ new EnergyMeasurement(time, FlowType.Production, 0.16) ]
-    let actual = fromFusionSolarResponse responseBody
+    let actual = EnergyMeasurement.fromFusionSolarResponse responseBody
     Assert.Equal<EnergyMeasurement list>(expected, actual)

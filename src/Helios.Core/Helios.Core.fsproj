@@ -12,6 +12,7 @@
     <Compile Include="Services/HttpHandler.fs" />
     <Compile Include="Services/FusionSolar.fs" />
     <Compile Include="Services/EntsoE.fs" />
+    <Compile Include="Services/Fingrid.fs" />
     <Compile Include="Models/ElectricitySpotPrice.fs" />
     <Compile Include="Models/EnergyMeasurement.fs" />
     <Compile Include="Database.fs" />
@@ -20,6 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="FSharp.Data" Version="6.3.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>

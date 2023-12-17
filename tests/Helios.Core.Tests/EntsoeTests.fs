@@ -115,30 +115,30 @@ let ``getDayAheadPrices should return TimeSeriesPeriod list parsed from returned
         EntsoE.getDayAheadPrices
             (DateTimeOffset.Parse("2023-03-25T23:00Z"), (DateTimeOffset.Parse("2023-03-27T22:00Z")))
             (EntsoE.init
-                { httpClient = mock.Object
-                  logger = new MockLogger()
-                  securityToken = "test" })
+                { HttpClient = mock.Object
+                  Logger = new MockLogger()
+                  SecurityToken = "test" })
 
     // Assert
     let expected =
-        [ { TimeSeriesPeriod.timeInterval =
-              { TimeSeriesPeriodInterval.startDt = DateTimeOffset.Parse("2023-03-25T23:00Z")
-                TimeSeriesPeriodInterval.endDt = DateTimeOffset.Parse("2023-03-26T01:00Z") }
-            TimeSeriesPeriod.points =
-              [ { TimeSeriesPoint.position = 1
-                  TimeSeriesPoint.priceAmount = 39.66m }
-                { TimeSeriesPoint.position = 2
-                  TimeSeriesPoint.priceAmount = 39.23m }
-                { TimeSeriesPoint.position = 3
-                  TimeSeriesPoint.priceAmount = 40.12m } ] }
-          { TimeSeriesPeriod.timeInterval =
-              { TimeSeriesPeriodInterval.startDt = DateTimeOffset.Parse("2023-03-27T00:00Z")
-                TimeSeriesPeriodInterval.endDt = DateTimeOffset.Parse("2023-03-27T01:00Z") }
-            TimeSeriesPeriod.points =
-              [ { TimeSeriesPoint.position = 1
-                  TimeSeriesPoint.priceAmount = 42.13m }
-                { TimeSeriesPoint.position = 2
-                  TimeSeriesPoint.priceAmount = 40.31m } ] } ]
+        [ { TimeSeriesPeriod.TimeInterval =
+              { TimeSeriesPeriodInterval.StartDt = DateTimeOffset.Parse("2023-03-25T23:00Z")
+                TimeSeriesPeriodInterval.EndDt = DateTimeOffset.Parse("2023-03-26T01:00Z") }
+            TimeSeriesPeriod.Points =
+              [ { TimeSeriesPoint.Position = 1
+                  TimeSeriesPoint.PriceAmount = 39.66m }
+                { TimeSeriesPoint.Position = 2
+                  TimeSeriesPoint.PriceAmount = 39.23m }
+                { TimeSeriesPoint.Position = 3
+                  TimeSeriesPoint.PriceAmount = 40.12m } ] }
+          { TimeSeriesPeriod.TimeInterval =
+              { TimeSeriesPeriodInterval.StartDt = DateTimeOffset.Parse("2023-03-27T00:00Z")
+                TimeSeriesPeriodInterval.EndDt = DateTimeOffset.Parse("2023-03-27T01:00Z") }
+            TimeSeriesPeriod.Points =
+              [ { TimeSeriesPoint.Position = 1
+                  TimeSeriesPoint.PriceAmount = 42.13m }
+                { TimeSeriesPoint.Position = 2
+                  TimeSeriesPoint.PriceAmount = 40.31m } ] } ]
 
     match result with
     | Ok res -> Assert.Equal<TimeSeriesPeriod list>(res, expected)

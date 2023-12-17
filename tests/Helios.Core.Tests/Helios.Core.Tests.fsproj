@@ -14,12 +14,14 @@
     <Compile Include="LoggerTests.fs" />
     <Compile Include="HttpHandlerTests.fs" />
     <Compile Include="FusionSolarTests.fs" />
+    <Compile Include="FingridTests.fs" />
     <Compile Include="RepositoryTests.fs" />
     <Compile Include="EntsoeTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="FSharp.Data" Version="6.3.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.3.2" />
     <PackageReference Include="Moq" Version="4.20.69" />

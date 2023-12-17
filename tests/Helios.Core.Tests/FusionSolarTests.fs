@@ -108,17 +108,17 @@ let mockHttpClientWithResponse (responses: Map<string, Result<HttpResponseMessag
 let ``Init function should initialize record with config data & isLoggedIn to false`` () =
     // Arrange
     let config: FusionSolar.Config =
-        { httpClient = new HttpHandler()
-          logger = new MockLogger()
-          userName = "testUser"
-          systemCode = "testSystem" }
+        { HttpClient = new HttpHandler()
+          Logger = new MockLogger()
+          UserName = "testUser"
+          SystemCode = "testSystem" }
 
     // Act
     let result = FusionSolar.init config
 
     // Assert
-    Assert.Equal(false, result.isLoggedIn)
-    Assert.Equal(config, result.config)
+    Assert.Equal(false, result.IsLoggedIn)
+    Assert.Equal(config, result.Config)
 
 [<Fact>]
 let ``getStations should call login first if isLoggedIn is false, should return stations response`` () =
@@ -126,8 +126,8 @@ let ``getStations should call login first if isLoggedIn is false, should return 
     let mock =
         mockHttpClientWithResponse (
             Map.ofList
-                [ FusionSolar.EndpointUrls.login, (Ok ResponseMocks.LoginSuccess)
-                  FusionSolar.EndpointUrls.getStations, (Ok ResponseMocks.GetStationsSuccess) ]
+                [ FusionSolar.EndpointUrls.Login, (Ok ResponseMocks.LoginSuccess)
+                  FusionSolar.EndpointUrls.GetStations, (Ok ResponseMocks.GetStationsSuccess) ]
         )
 
     mock
@@ -138,10 +138,10 @@ let ``getStations should call login first if isLoggedIn is false, should return 
     let result =
         FusionSolar.getStations (
             FusionSolar.init
-                { httpClient = mock.Object
-                  logger = new MockLogger()
-                  userName = "test"
-                  systemCode = "user" }
+                { HttpClient = mock.Object
+                  Logger = new MockLogger()
+                  UserName = "test"
+                  SystemCode = "user" }
         )
 
     // Assert
@@ -156,18 +156,18 @@ let ``getStations should not call login if isLoggedIn is true, should return sta
     // Arrange
     let mock =
         mockHttpClientWithResponse (
-            Map.ofList [ FusionSolar.EndpointUrls.getStations, (Ok ResponseMocks.GetStationsSuccess) ]
+            Map.ofList [ FusionSolar.EndpointUrls.GetStations, (Ok ResponseMocks.GetStationsSuccess) ]
         )
 
     // Act
     let result =
         FusionSolar.getStations (
-            { isLoggedIn = true
-              config =
-                { httpClient = mock.Object
-                  logger = new MockLogger()
-                  userName = "test"
-                  systemCode = "user" } }
+            { IsLoggedIn = true
+              Config =
+                { HttpClient = mock.Object
+                  Logger = new MockLogger()
+                  UserName = "test"
+                  SystemCode = "user" } }
         )
 
     // Assert
@@ -183,8 +183,8 @@ let ``getHourlyData should call login first if isLoggedIn is false, should retur
     let mock =
         mockHttpClientWithResponse (
             Map.ofList
-                [ FusionSolar.EndpointUrls.login, (Ok ResponseMocks.LoginSuccess)
-                  FusionSolar.EndpointUrls.getHourlyData, (Ok ResponseMocks.getHourlyDataSuccess) ]
+                [ FusionSolar.EndpointUrls.Login, (Ok ResponseMocks.LoginSuccess)
+                  FusionSolar.EndpointUrls.GetHourlyData, (Ok ResponseMocks.getHourlyDataSuccess) ]
         )
 
     mock
@@ -197,10 +197,10 @@ let ``getHourlyData should call login first if isLoggedIn is false, should retur
             { stationCodes = "ABCD123"
               collectTime = 1L }
             (FusionSolar.init
-                { httpClient = mock.Object
-                  logger = new MockLogger()
-                  userName = "test"
-                  systemCode = "user" })
+                { HttpClient = mock.Object
+                  Logger = new MockLogger()
+                  UserName = "test"
+                  SystemCode = "user" })
 
     // Assert
     match result with
@@ -214,7 +214,7 @@ let ``getHourlyData should not call login if isLoggedIn is true, should return h
     // Arrange
     let mock =
         mockHttpClientWithResponse (
-            Map.ofList [ FusionSolar.EndpointUrls.getHourlyData, (Ok ResponseMocks.getHourlyDataSuccess) ]
+            Map.ofList [ FusionSolar.EndpointUrls.GetHourlyData, (Ok ResponseMocks.getHourlyDataSuccess) ]
         )
 
     // Act
@@ -222,12 +222,12 @@ let ``getHourlyData should not call login if isLoggedIn is true, should return h
         FusionSolar.getHourlyData
             { stationCodes = "ABCD123"
               collectTime = 1L }
-            { isLoggedIn = true
-              config =
-                { httpClient = mock.Object
-                  logger = new MockLogger()
-                  userName = "test"
-                  systemCode = "user" } }
+            { IsLoggedIn = true
+              Config =
+                { HttpClient = mock.Object
+                  Logger = new MockLogger()
+                  UserName = "test"
+                  SystemCode = "user" } }
 
     // Assert
     match result with

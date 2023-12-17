@@ -6,7 +6,9 @@ Helios is a console application designed to import energy measurement data into 
 
 ### EnergyMeasurement
 
-Represents measurements of energy production or consumption (indicated by FlowType) at a given hour. FlowType is a discriminated union that is mapped to INTEGER in database and gets a value of `0` for energy production and `1` for energy consumption.
+Represents measurements of energy production or consumption (indicated by FlowType) at a given hour. FlowType is a discriminated union that is mapped to INTEGER in database and gets a value of `0` for energy production and `1` for energy consumption. Production is the total KWh output of the solar panels, some of which are consumed by the household. Consumption is the total energy consumption of a household. If a consumption is negative, it means that the household produced more energy than it consumed and the excess energy was fed back to the grid.
+
+Negative values of consumption measurements indicate surplus energy that was fed back to the grid.
 
 ```mermaid
 classDiagram
@@ -92,4 +94,6 @@ FUSIONSOLAR__USERNAME
 FUSIONSOLAR__PASSWORD
 FUSIONSOLAR__STATIONCODE
 ENTSOE__SECURITYTOKEN
+FINGRID__SITEIDENTIFIERS_PRODUCTION
+FINGRID__SITEIDENTIFIERS_CONSUMPTION
 ```

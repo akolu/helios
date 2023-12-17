@@ -8,20 +8,20 @@ open Helios.Core.Services.EntsoE.Types
 [<Fact>]
 let ``fromEntsoETransmissionDayAheadPricesResponse should map response to ElectricitySpotPrice list`` () =
     let timeSeries =
-        [ { TimeSeriesPeriod.timeInterval =
-              { TimeSeriesPeriodInterval.startDt = DateTimeOffset.Parse("2023-03-25T23:00Z")
-                TimeSeriesPeriodInterval.endDt = DateTimeOffset.Parse("2023-03-26T01:00Z") }
-            TimeSeriesPeriod.points =
-              [ { TimeSeriesPoint.position = 1
-                  TimeSeriesPoint.priceAmount = 39.66m }
-                { TimeSeriesPoint.position = 2
-                  TimeSeriesPoint.priceAmount = 39.23m } ] }
-          { TimeSeriesPeriod.timeInterval =
-              { TimeSeriesPeriodInterval.startDt = DateTimeOffset.Parse("2023-03-27T00:00Z")
-                TimeSeriesPeriodInterval.endDt = DateTimeOffset.Parse("2023-03-27T01:00Z") }
-            TimeSeriesPeriod.points =
-              [ { TimeSeriesPoint.position = 1
-                  TimeSeriesPoint.priceAmount = 42.13m } ] } ]
+        [ { TimeSeriesPeriod.TimeInterval =
+              { TimeSeriesPeriodInterval.StartDt = DateTimeOffset.Parse("2023-03-25T23:00Z")
+                TimeSeriesPeriodInterval.EndDt = DateTimeOffset.Parse("2023-03-26T01:00Z") }
+            TimeSeriesPeriod.Points =
+              [ { TimeSeriesPoint.Position = 1
+                  TimeSeriesPoint.PriceAmount = 39.66m }
+                { TimeSeriesPoint.Position = 2
+                  TimeSeriesPoint.PriceAmount = 39.23m } ] }
+          { TimeSeriesPeriod.TimeInterval =
+              { TimeSeriesPeriodInterval.StartDt = DateTimeOffset.Parse("2023-03-27T00:00Z")
+                TimeSeriesPeriodInterval.EndDt = DateTimeOffset.Parse("2023-03-27T01:00Z") }
+            TimeSeriesPeriod.Points =
+              [ { TimeSeriesPoint.Position = 1
+                  TimeSeriesPoint.PriceAmount = 42.13m } ] } ]
 
     let expected =
         [ new ElectricitySpotPrice(DateTimeOffset.Parse("2023-03-25T23:00:00Z"), 3.966m)
