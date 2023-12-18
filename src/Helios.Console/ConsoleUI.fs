@@ -7,6 +7,7 @@ open System
 module Commands =
     type Main =
         | Import
+        | Export
         | Quit
 
     type Import =
@@ -19,7 +20,7 @@ module Commands =
 
         SelectionPrompt<Main>()
         |> tap (fun p -> p.Title <- "Please choose a command: ")
-        |> fun p -> p.AddChoices [ Import; Quit ]
+        |> fun p -> p.AddChoices [ Import; Export; Quit ]
         |> AnsiConsole.Prompt
 
     let importPrompt () =

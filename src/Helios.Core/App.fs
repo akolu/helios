@@ -130,3 +130,7 @@ module Main =
                 r |> List.iter (fun x -> printfn "%A" (x.ToString())))
             |> app.Repositories.EnergyMeasurement.Save
             |> Ok
+
+    let generateReport (app: App) =
+        app.Repositories.Reports.SolarEnergySavingsReport
+        |> tap (List.iter (fun x -> printfn "%A" x))

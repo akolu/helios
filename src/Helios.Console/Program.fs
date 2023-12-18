@@ -17,6 +17,7 @@ let rec mainLoop state =
             | Some csvPath -> state.App |> importFingrid csvPath |> ignore
 
         mainLoop (state)
+    | Export -> state.App |> generateReport |> ignore
     | Quit ->
         let confirm = AnsiConsole.Confirm("Are you sure you want to quit?")
         if confirm then () else mainLoop (state)
