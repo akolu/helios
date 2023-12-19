@@ -2,6 +2,7 @@ module FingridTests
 
 open Xunit
 open Helios.Core.Services
+open Helios.Core.Services.Fingrid
 open FSharp.Data
 open TestUtils
 open System
@@ -43,17 +44,36 @@ let ``parseNetEnergyConsumptionFromDatahubCsv parses csv and calculates net ener
                       Consumption = "98765" } })
 
     let expected =
-        [ (DateTimeOffset.Parse("2023-09-23T08:00:00Z"), 0.151)
-          (DateTimeOffset.Parse("2023-09-23T09:00:00Z"), 0.184)
-          (DateTimeOffset.Parse("2023-09-23T10:00:00Z"), 0.192)
-          (DateTimeOffset.Parse("2023-09-23T11:00:00Z"), -0.064)
-          (DateTimeOffset.Parse("2023-09-23T12:00:00Z"), 1.306)
-          (DateTimeOffset.Parse("2023-09-23T13:00:00Z"), 0.206)
-          (DateTimeOffset.Parse("2023-09-23T14:00:00Z"), 0.414)
-          (DateTimeOffset.Parse("2023-09-23T15:00:00Z"), 0.527)
-          (DateTimeOffset.Parse("2023-09-23T16:00:00Z"), 0.602) ]
+        [ { Time = DateTimeOffset.Parse("2023-09-23T08:00:00Z")
+            Consumption = 0.174
+            Production = 0.023 }
+          { Time = DateTimeOffset.Parse("2023-09-23T09:00:00Z")
+            Consumption = 0.199
+            Production = 0.015 }
+          { Time = DateTimeOffset.Parse("2023-09-23T10:00:00Z")
+            Consumption = 0.209
+            Production = 0.017 }
+          { Time = DateTimeOffset.Parse("2023-09-23T11:00:00Z")
+            Consumption = 0.072
+            Production = 0.136 }
+          { Time = DateTimeOffset.Parse("2023-09-23T12:00:00Z")
+            Consumption = 1.326
+            Production = 0.02 }
+          { Time = DateTimeOffset.Parse("2023-09-23T13:00:00Z")
+            Consumption = 0.247
+            Production = 0.041 }
+          { Time = DateTimeOffset.Parse("2023-09-23T14:00:00Z")
+            Consumption = 0.422
+            Production = 0.008 }
+          { Time = DateTimeOffset.Parse("2023-09-23T15:00:00Z")
+            Consumption = 0.529
+            Production = 0.002 }
+          { Time = DateTimeOffset.Parse("2023-09-23T16:00:00Z")
+            Consumption = 0.602
+            Production = 0.0 } ]
 
     // can't compare the lists directly due to floats, so compare each item with tolerance on floats
     for (expected, actual) in List.zip expected result do
-        Assert.Equal(fst expected, fst actual)
-        Assert.InRange(snd actual, snd expected - TOLERANCE, snd expected + TOLERANCE)
+        Assert.Equal(expected.Time, actual.Time)
+        Assert.InRange(actual.Consumption, expected.Consumption - TOLERANCE, expected.Consumption + TOLERANCE)
+        Assert.InRange(actual.Production, actual.Production - TOLERANCE, actual.Production + TOLERANCE)

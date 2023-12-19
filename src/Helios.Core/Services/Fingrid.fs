@@ -14,6 +14,11 @@ type SiteType =
     { Consumption: string
       Production: string }
 
+type FingridReading =
+    { Time: DateTimeOffset
+      Consumption: double
+      Production: double }
+
 type Config =
     { Logger: ILogger
       SiteIdentifiers: SiteType }
@@ -36,7 +41,9 @@ let private getTotalConsumption (siteIdentifiers: SiteType) (time: DateTimeOffse
                 failwithf "No rows found for site type %A. Did you forget to set environment variables?" siteType)
         |> Seq.sumBy (fun row -> row.KWh)
 
-    (time, (getTotal siteIdentifiers.Consumption) - (getTotal siteIdentifiers.Production))
+    { Time = time
+      Consumption = getTotal siteIdentifiers.Consumption
+      Production = getTotal siteIdentifiers.Production }
 
 let parseNetEnergyConsumptionFromDatahubCsv (csv: CsvFile) (this: Fingrid) =
     csv.Rows

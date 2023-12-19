@@ -6,6 +6,7 @@ open Microsoft.EntityFrameworkCore
 open Database
 open Helios.Core.Services
 open Helios.Core.Models
+open Helios.Core.Models.SolarPanelOutput
 open Helios.Core.Utils
 open Repository
 open Logger
@@ -24,7 +25,7 @@ type Secrets =
              SiteIdentifier_Production: string |} }
 
 module Main =
-    open Helios.Core.Models.EnergyMeasurement
+    open Helios.Core.Models.HouseholdEnergyReading
 
     let private initDbContext (dbPath: string) =
         let serviceCollection = new ServiceCollection()
@@ -95,11 +96,11 @@ module Main =
               collectTime = date.ToUnixTimeMilliseconds() }
         |> tap (fun _ -> printfn "Successfully got FusionSolar data from date %A" date)
         |> unwrap
-        |> EnergyMeasurement.fromFusionSolarResponse
+        |> SolarPanelOutput.fromFusionSolarResponse
         |> tap (fun r ->
             printfn "Successfully parsed data from FusionSolar response:"
             r |> List.iter (fun x -> printfn "%A" (x.ToString())))
-        |> app.Repositories.EnergyMeasurement.Save
+        |> app.Repositories.SolarPanelOutput.Save
         |> tap (fun _ -> printfn "Successfully saved data to database")
 
     let importEntsoE (fromDate: DateTimeOffset, toDate: DateTimeOffset) (app: App) =
@@ -124,11 +125,16 @@ module Main =
             app.Fingrid
             |> Fingrid.parseNetEnergyConsumptionFromDatahubCsv (CsvFile.Load(filePath, ";"))
             |> tap (fun _ -> printfn "Successfully parsed data from Fingrid CSV file %s" filePath)
-            |> List.map (fun (t, kwh) -> new EnergyMeasurement(time = t, flowType = FlowType.Consumption, kwh = kwh))
+            |> List.map (fun reading ->
+                new HouseholdEnergyReading(
+                    time = reading.Time,
+                    consumption = reading.Consumption,
+                    production = reading.Production
+                ))
             |> tap (fun r ->
                 printfn "Successfully parsed data from Fingrid response:"
                 r |> List.iter (fun x -> printfn "%A" (x.ToString())))
-            |> app.Repositories.EnergyMeasurement.Save
+            |> app.Repositories.HouseholdEnergyReading.Save
             |> Ok
 
     let generateReport (app: App) =

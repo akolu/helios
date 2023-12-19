@@ -4,18 +4,33 @@ Helios is a console application designed to import energy measurement data into 
 
 ## Domain models
 
-### EnergyMeasurement
+### SolarPanelOutput
 
-Represents measurements of energy production or consumption (indicated by FlowType) at a given hour. FlowType is a discriminated union that is mapped to INTEGER in database and gets a value of `0` for energy production and `1` for energy consumption. Production is the total KWh output of the solar panels, some of which are consumed by the household. Consumption is the total energy consumption of a household. If a consumption is negative, it means that the household produced more energy than it consumed and the excess energy was fed back to the grid.
-
-Negative values of consumption measurements indicate surplus energy that was fed back to the grid.
+Represents total solar panel output in kilowatt hours at a given hour.
 
 ```mermaid
 classDiagram
-    class EnergyMeasurement {
+    class SolarPanelOutput {
         -DateTimeOffset Time
-        -FlowType FlowType
         -double KWh
+        +ToString(): string
+        +Equals(obj: obj): bool
+        +GetHashCode(): int
+    }
+```
+
+### HouseholdEnergyReading
+
+Represents measurements of household energy production or consumption at a given hour. Production is the electricity produced that was not used by the household. Consumption is the gross electricity consumption of the household. Production is substracted from Consumption by the electricity company and net consumption is billed to the household.
+
+If production is more than consumption, the excess energy was fed back to the grid and sold.
+
+```mermaid
+classDiagram
+    class HouseholdEnergyReading {
+        -DateTimeOffset Time
+        -double Production
+        -double Consumption
         +ToString(): string
         +Equals(obj: obj): bool
         +GetHashCode(): int
@@ -45,10 +60,14 @@ Helios uses SQLite database to store energy measurements. The application will c
 
 ```mermaid
 erDiagram
-    EnergyMeasurement {
+    SolarPanelOutput {
         TEXT Time
-        INTEGER FlowType
         REAL KWh
+    }
+    HouseholdEnergyReading {
+        TEXT Time
+        REAL Production
+        REAL Consumption
     }
     ElectricitySpotPrice {
         TEXT Time

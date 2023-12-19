@@ -1,35 +1,34 @@
 module Helios.Core.Repository
 
 open Microsoft.FSharp.Linq
-open Helios.Core.Models.EnergyMeasurement
+open Helios.Core.Models.SolarPanelOutput
+open Helios.Core.Models.HouseholdEnergyReading
 open Helios.Core.Database
 open Helios.Core.Models.ElectricitySpotPrice
 open System
 open Microsoft.EntityFrameworkCore
 open System.Data
 
-type EnergyMeasurementRepository(db: HeliosDatabaseContext) =
-    member _.Find(startDate, endDate, flowType) =
-        db.EnergyMeasurements
-        |> Seq.filter (fun m -> m.Time >= startDate && m.Time <= endDate && m.FlowType = flowType)
+type SolarPanelOutputRepository(db: HeliosDatabaseContext) =
+    member _.Find(startDate, endDate) =
+        db.SolarPanelOutputs
+        |> Seq.filter (fun m -> m.Time >= startDate && m.Time <= endDate)
         |> Seq.toList
 
-    member _.Save(yields: EnergyMeasurement list) =
+    member _.Save(yields: SolarPanelOutput list) =
         let existingMeasurements =
-            db.EnergyMeasurements
-            |> Seq.filter (fun m -> yields |> List.exists (fun y -> y.Time = m.Time && y.FlowType = m.FlowType))
+            db.SolarPanelOutputs
+            |> Seq.filter (fun m -> yields |> List.exists (fun y -> y.Time = m.Time))
             |> Seq.toList
 
         let existingRows, newRows =
             yields
-            |> List.partition (fun row ->
-                existingMeasurements
-                |> List.exists (fun m -> row.Time = m.Time && row.FlowType = m.FlowType))
+            |> List.partition (fun row -> existingMeasurements |> List.exists (fun m -> row.Time = m.Time))
 
         existingRows
-        |> List.iter (fun row -> printfn "Warning: EnergyMeasurement %s already exists, ignoring" (row.ToString()))
+        |> List.iter (fun row -> printfn "Warning: SolarPanelOutput %s already exists, ignoring" (row.ToString()))
 
-        db.EnergyMeasurements.AddRange(newRows)
+        db.SolarPanelOutputs.AddRange(newRows)
         db.SaveChanges() |> ignore
 
 type ElectricitySpotPriceRepository(db: HeliosDatabaseContext) =
@@ -54,9 +53,32 @@ type ElectricitySpotPriceRepository(db: HeliosDatabaseContext) =
         db.ElectricitySpotPrices.AddRange(newRows)
         db.SaveChanges() |> ignore
 
+type HouseholdEnergyReadingRepository(db: HeliosDatabaseContext) =
+    member _.Find(startDate, endDate) =
+        db.HouseholdEnergyReadings
+        |> Seq.filter (fun m -> m.Time >= startDate && m.Time <= endDate)
+        |> Seq.toList
+
+    member _.Save(readings: HouseholdEnergyReading list) =
+        let existingReadings =
+            db.HouseholdEnergyReadings
+            |> Seq.filter (fun m -> readings |> List.exists (fun y -> y.Time = m.Time))
+            |> Seq.toList
+
+        let existingRows, newRows =
+            readings
+            |> List.partition (fun row -> existingReadings |> List.exists (fun m -> row.Time = m.Time))
+
+        existingRows
+        |> List.iter (fun row -> printfn "Warning: HouseholdEnergyReading %s already exists, ignoring" (row.ToString()))
+
+        db.HouseholdEnergyReadings.AddRange(newRows)
+        db.SaveChanges() |> ignore
+
 
 type EnergySavingsDatabaseResult =
     { Time: DateTimeOffset
+      SolarPanelOutput: float
       Consumption: float
       Production: float
       Price: decimal }
@@ -67,8 +89,6 @@ type EnergySavingsReport =
       Production: float
       Surplus: float
       SpotPrice: decimal
-      GrossCost: decimal
-      GrossCostAcc: decimal
       Savings: decimal
       SavingsAcc: decimal
       SoldToGrid: decimal
@@ -79,22 +99,18 @@ type EnergySavingsReport =
 
 type ReportsRepository(db: HeliosDatabaseContext) =
     member _.SolarEnergySavingsReport =
-        let staticCostsPerKwh = 5.62m + 2.79372m + 0.49m
+        let fixedCosts = 5.62m + 2.79372m + 0.49m
 
         query {
-            for consumption in db.EnergyMeasurements do
-                join production in db.EnergyMeasurements on (consumption.Time = production.Time)
-                join spotPrice in db.ElectricitySpotPrices on (consumption.Time = spotPrice.Time)
-
-                where (
-                    consumption.FlowType = FlowType.Consumption
-                    && production.FlowType = FlowType.Production
-                )
+            for reading in db.HouseholdEnergyReadings do
+                join output in db.SolarPanelOutputs on (reading.Time = output.Time)
+                join spotPrice in db.ElectricitySpotPrices on (reading.Time = spotPrice.Time)
 
                 select
-                    { Time = consumption.Time
-                      Consumption = consumption.Kwh
-                      Production = production.Kwh
+                    { Time = reading.Time
+                      SolarPanelOutput = output.Kwh
+                      Consumption = reading.Consumption
+                      Production = reading.Production
                       Price = spotPrice.EuroCentsPerKWh }
         }
         |> Seq.toList
@@ -110,8 +126,6 @@ type ReportsRepository(db: HeliosDatabaseContext) =
                           Production = 0.0
                           Surplus = 0.0
                           SpotPrice = 0.0m
-                          GrossCost = 0.0m
-                          GrossCostAcc = 0.0m
                           Savings = 0.0m
                           SavingsAcc = 0.0m
                           SoldToGrid = 0.0m
@@ -119,11 +133,11 @@ type ReportsRepository(db: HeliosDatabaseContext) =
                           NetTotal = 0.0m
                           NetTotalAcc = 0.0m }
 
-                let grossCost = decimal row.Consumption * (row.Price + staticCostsPerKwh) / 100.0m
-                let surplus = if row.Consumption < 0 then Math.Abs(row.Consumption) else 0
+                let netConsumption = row.Consumption - row.Production
+                let surplus = if netConsumption < 0 then Math.Abs(netConsumption) else 0.0
 
                 let savings =
-                    decimal (row.Production - surplus) * (row.Price + staticCostsPerKwh) / 100.0m
+                    decimal (row.SolarPanelOutput - surplus) * (row.Price + fixedCosts) / 100.0m
 
                 let soldToGrid = decimal surplus * row.Price / 100m
                 let netTotal = savings + soldToGrid
@@ -134,8 +148,6 @@ type ReportsRepository(db: HeliosDatabaseContext) =
                       Production = row.Production
                       Surplus = surplus
                       SpotPrice = row.Price
-                      GrossCost = grossCost
-                      GrossCostAcc = lastRow.GrossCostAcc + grossCost
                       Savings = savings
                       SavingsAcc = lastRow.SavingsAcc + savings
                       SoldToGrid = soldToGrid
@@ -146,61 +158,14 @@ type ReportsRepository(db: HeliosDatabaseContext) =
                 acc @ [ newRow ])
             []
 
-
-
-
-
-
-// query {
-//     for consumption in db.EnergyMeasurements do
-//         join production in db.EnergyMeasurements on (consumption.Time = production.Time)
-//         join spotPrice in db.ElectricitySpotPrices on (consumption.Time = spotPrice.Time)
-
-//         where (
-//             consumption.FlowType = FlowType.Consumption
-//             && production.FlowType = FlowType.Production
-//         )
-
-//         groupBy consumption.Time into g
-
-//         select
-//             { Time = g.Key
-//               Consumption = g |> Seq.head |> (fun (c, _, _) -> c.Kwh)
-//               Production = g |> Seq.head |> (fun (_, p, _) -> p.Kwh)
-//               Price = g |> Seq.head |> (fun (_, _, sp) -> sp.EuroCentsPerKWh) }
-// }
-// |> Seq.toList
-
-
-// let generateReport2 =
-//     let sql =
-//         @"
-//         SELECT c.Time AS Time, c.Kwh AS Consumption, p.Kwh AS Production, esp.EuroCentsPerKWh AS Price
-//         FROM EnergyMeasurements c
-//         INNER JOIN EnergyMeasurements p ON c.Time = p.Time AND p.FlowType = @productionFlowType
-//         INNER JOIN ElectricitySpotPrices esp ON c.Time = esp.Time
-//         WHERE c.FlowType = @consumptionFlowType
-//         GROUP BY c.Time
-//         ORDER BY c.Time ASC"
-
-//     let consumptionFlowTypeParam =
-//         new SqlParameter("@consumptionFlowType", SqlDbType.Int)
-
-//     consumptionFlowTypeParam.Value <- int FlowType.Consumption
-
-//     let productionFlowTypeParam = new SqlParameter("@productionFlowType", SqlDbType.Int)
-//     productionFlowTypeParam.Value <- int FlowType.Production
-
-//     db.Database.SqlQuery<EnergyReport>(sql, consumptionFlowTypeParam, productionFlowTypeParam)
-//     |> Seq.toList
-
-
 type Repositories =
-    { EnergyMeasurement: EnergyMeasurementRepository
+    { SolarPanelOutput: SolarPanelOutputRepository
+      HouseholdEnergyReading: HouseholdEnergyReadingRepository
       ElectricitySpotPrice: ElectricitySpotPriceRepository
       Reports: ReportsRepository }
 
     static member Init(db: HeliosDatabaseContext) =
-        { EnergyMeasurement = new EnergyMeasurementRepository(db)
+        { SolarPanelOutput = new SolarPanelOutputRepository(db)
+          HouseholdEnergyReading = new HouseholdEnergyReadingRepository(db)
           ElectricitySpotPrice = new ElectricitySpotPriceRepository(db)
           Reports = new ReportsRepository(db) }

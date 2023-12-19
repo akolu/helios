@@ -14,7 +14,8 @@
     <Compile Include="Services/EntsoE.fs" />
     <Compile Include="Services/Fingrid.fs" />
     <Compile Include="Models/ElectricitySpotPrice.fs" />
-    <Compile Include="Models/EnergyMeasurement.fs" />
+    <Compile Include="Models/SolarPanelOutput.fs" />
+    <Compile Include="Models/HouseholdEnergyReading.fs" />
     <Compile Include="Database.fs" />
     <Compile Include="Repository.fs" /> 
     <Compile Include="App.fs" />

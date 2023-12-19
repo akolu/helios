@@ -1,12 +1,12 @@
-module EnergyMeasurementTests
+module SolarPanelOutputTests
 
 open Xunit
 open System
-open Helios.Core.Models.EnergyMeasurement
+open Helios.Core.Models.SolarPanelOutput
 open Helios.Core.Services.FusionSolar
 
 [<Fact>]
-let ``fromFusionSolarResponse should map response to EnergyMeasurement list`` () =
+let ``fromFusionSolarResponse should map response to SolarPanelOutput list`` () =
     let time = DateTimeOffset.Parse("2021-01-01T00:00:00+00:00")
     let unixTime = time.ToUnixTimeMilliseconds()
 
@@ -28,6 +28,6 @@ let ``fromFusionSolarResponse should map response to EnergyMeasurement list`` ()
                     theory_power = None
                     ongrid_power = None } } ] }
 
-    let expected = [ new EnergyMeasurement(time, FlowType.Production, 0.16) ]
-    let actual = EnergyMeasurement.fromFusionSolarResponse responseBody
-    Assert.Equal<EnergyMeasurement list>(expected, actual)
+    let expected = [ new SolarPanelOutput(time, 0.16) ]
+    let actual = SolarPanelOutput.fromFusionSolarResponse responseBody
+    Assert.Equal<SolarPanelOutput list>(expected, actual)

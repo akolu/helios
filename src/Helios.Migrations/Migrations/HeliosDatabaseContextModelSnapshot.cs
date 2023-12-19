@@ -30,20 +30,33 @@ namespace Helios.Migrations.Migrations
                     b.ToTable("ElectricitySpotPrices");
                 });
 
-            modelBuilder.Entity("Helios.Core.Models.EnergyMeasurement+EnergyMeasurement", b =>
+            modelBuilder.Entity("Helios.Core.Models.HouseholdEnergyReading+HouseholdEnergyReading", b =>
                 {
                     b.Property<DateTimeOffset>("Time")
                         .HasColumnType("TEXT");
 
-                    b.Property<int>("FlowType")
-                        .HasColumnType("INTEGER");
+                    b.Property<double>("Consumption")
+                        .HasColumnType("REAL");
+
+                    b.Property<double>("Production")
+                        .HasColumnType("REAL");
+
+                    b.HasKey("Time");
+
+                    b.ToTable("HouseholdEnergyReadings");
+                });
+
+            modelBuilder.Entity("Helios.Core.Models.SolarPanelOutput+SolarPanelOutput", b =>
+                {
+                    b.Property<DateTimeOffset>("Time")
+                        .HasColumnType("TEXT");
 
                     b.Property<double>("Kwh")
                         .HasColumnType("REAL");
 
-                    b.HasKey("Time", "FlowType");
+                    b.HasKey("Time");
 
-                    b.ToTable("EnergyMeasurements");
+                    b.ToTable("SolarPanelOutputs");
                 });
 #pragma warning restore 612, 618
         }
