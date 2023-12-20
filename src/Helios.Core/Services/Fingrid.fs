@@ -4,6 +4,7 @@ open Helios.Core.Logger
 open FSharp.Data
 open System
 open Helios.Core.Utils
+open Microsoft.Extensions.Logging
 
 type GrossEnergyConsumption =
     { SiteIdentifier: string

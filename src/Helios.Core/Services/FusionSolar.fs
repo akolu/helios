@@ -2,6 +2,7 @@ module Helios.Core.Services.FusionSolar
 
 open Helios.Core.Utils
 open Helios.Core.Logger
+open Microsoft.Extensions.Logging
 
 module Constants =
     let XSRF_TOKEN_COOKIE_KEY = "XSRF-TOKEN"
@@ -93,7 +94,7 @@ let private login (this: FusionSolar) =
         |> tap (fun response ->
             response
             >>= HttpUtils.parseJsonBody<Types.Login.ResponseBody>
-            |> this.Config.Logger.LogJson)
+            |> (jsonResultToString >> this.Config.Logger.LogDebug))
         >>= HttpUtils.parseCookie Constants.XSRF_TOKEN_COOKIE_KEY
     with
     | Ok xsrfToken ->
@@ -108,7 +109,7 @@ let rec getStations (this: FusionSolar) =
     | true ->
         this.Config.HttpClient.Post(EndpointUrls.GetStations, (HttpUtils.toJsonStringContent {| pageNo = 1 |}))
         >>= HttpUtils.parseJsonBody<Types.GetStations.ResponseBody>
-        |> tap this.Config.Logger.LogJson
+        |> tap (jsonResultToString >> this.Config.Logger.LogDebug)
 
 
 let rec getHourlyData (body: Types.GetHourlyData.RequestBody) (this: FusionSolar) =
@@ -117,4 +118,4 @@ let rec getHourlyData (body: Types.GetHourlyData.RequestBody) (this: FusionSolar
     | true ->
         this.Config.HttpClient.Post(EndpointUrls.GetHourlyData, (HttpUtils.toJsonStringContent body))
         >>= HttpUtils.parseJsonBody<Types.GetHourlyData.ResponseBody>
-        |> tap this.Config.Logger.LogJson
+        |> tap (jsonResultToString >> this.Config.Logger.LogDebug)

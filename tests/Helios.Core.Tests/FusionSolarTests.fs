@@ -6,8 +6,8 @@ open System.Net.Http
 open System.Net
 open System.Text
 open FusionSolar.Types
-open TestUtils
 open Moq
+open Helios.Core.Logger
 
 module internal DataMocks =
     let LoginSuccessResponse: Login.ResponseBody =
@@ -104,12 +104,14 @@ let mockHttpClientWithResponse (responses: Map<string, Result<HttpResponseMessag
 
     mock
 
+let mockLogger = createLogger (new HeliosLoggerProvider(LoggerOptions.None))
+
 [<Fact>]
 let ``Init function should initialize record with config data & isLoggedIn to false`` () =
     // Arrange
     let config: FusionSolar.Config =
         { HttpClient = new HttpHandler()
-          Logger = new MockLogger()
+          Logger = mockLogger
           UserName = "testUser"
           SystemCode = "testSystem" }
 
@@ -139,7 +141,7 @@ let ``getStations should call login first if isLoggedIn is false, should return 
         FusionSolar.getStations (
             FusionSolar.init
                 { HttpClient = mock.Object
-                  Logger = new MockLogger()
+                  Logger = mockLogger
                   UserName = "test"
                   SystemCode = "user" }
         )
@@ -165,7 +167,7 @@ let ``getStations should not call login if isLoggedIn is true, should return sta
             { IsLoggedIn = true
               Config =
                 { HttpClient = mock.Object
-                  Logger = new MockLogger()
+                  Logger = mockLogger
                   UserName = "test"
                   SystemCode = "user" } }
         )
@@ -198,7 +200,7 @@ let ``getHourlyData should call login first if isLoggedIn is false, should retur
               collectTime = 1L }
             (FusionSolar.init
                 { HttpClient = mock.Object
-                  Logger = new MockLogger()
+                  Logger = mockLogger
                   UserName = "test"
                   SystemCode = "user" })
 
@@ -225,7 +227,7 @@ let ``getHourlyData should not call login if isLoggedIn is true, should return h
             { IsLoggedIn = true
               Config =
                 { HttpClient = mock.Object
-                  Logger = new MockLogger()
+                  Logger = mockLogger
                   UserName = "test"
                   SystemCode = "user" } }
 

@@ -2,11 +2,13 @@ namespace Helios.Core
 
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Configuration
+open Microsoft.Extensions.Logging
 open Microsoft.EntityFrameworkCore
 open Database
 open Helios.Core.Services
 open Helios.Core.Models
 open Helios.Core.Models.SolarPanelOutput
+open Helios.Core.Models.HouseholdEnergyReading
 open Helios.Core.Utils
 open Repository
 open Logger
@@ -25,8 +27,6 @@ type Secrets =
              SiteIdentifier_Production: string |} }
 
 module Main =
-    open Helios.Core.Models.HouseholdEnergyReading
-
     let private initDbContext (dbPath: string) =
         let serviceCollection = new ServiceCollection()
 
@@ -58,6 +58,7 @@ module Main =
     type App =
         { Repositories: Repositories
           Config: IConfiguration
+          Logger: ILogger
           FusionSolar: FusionSolar.FusionSolar
           EntsoE: EntsoE.EntsoE
           Fingrid: Fingrid.Fingrid }
@@ -66,10 +67,11 @@ module Main =
             let dbContext = initDbContext (defaultArg dbPath "Helios.sqlite")
             let configuration = initConfiguration ()
             let httpHandler = HttpHandler()
-            let logger = ConsoleLogger()
+            let logger = createLogger (new HeliosLoggerProvider())
 
-            { Repositories = Repositories.Init(dbContext)
+            { Repositories = Repositories.Init(dbContext, logger)
               Config = configuration
+              Logger = logger
               FusionSolar =
                 FusionSolar.init
                     { HttpClient = httpHandler
@@ -90,33 +92,39 @@ module Main =
 
     let importFusionSolar (date: DateTimeOffset) (app: App) =
         app.FusionSolar
-        |> tap (fun _ -> printfn "Successfully initialized FusionSolar client, getting data from date %A" date)
+        |> tap (fun _ ->
+            app.Logger.LogInformation(
+                sprintf "Successfully initialized FusionSolar client, getting data from date %A" date
+            ))
         |> FusionSolar.getHourlyData
             { stationCodes = app.Config.GetSection("FusionSolar").["StationCode"]
               collectTime = date.ToUnixTimeMilliseconds() }
-        |> tap (fun _ -> printfn "Successfully got FusionSolar data from date %A" date)
+        |> tap (fun _ -> app.Logger.LogInformation(sprintf "Successfully got FusionSolar data from date %A" date))
         |> unwrap
         |> SolarPanelOutput.fromFusionSolarResponse
         |> tap (fun r ->
-            printfn "Successfully parsed data from FusionSolar response:"
-            r |> List.iter (fun x -> printfn "%A" (x.ToString())))
+            app.Logger.LogInformation "Successfully parsed data from FusionSolar response"
+            r |> List.iter (fun x -> app.Logger.LogDebug(sprintf "%A" (x.ToString()))))
         |> app.Repositories.SolarPanelOutput.Save
-        |> tap (fun _ -> printfn "Successfully saved data to database")
+        |> tap (fun _ -> app.Logger.LogInformation "Successfully saved data to database")
 
     let importEntsoE (fromDate: DateTimeOffset, toDate: DateTimeOffset) (app: App) =
         app.EntsoE
         |> tap (fun _ ->
-            printfn "Successfully initialized ENTSO-E client, getting data from date %A to %A" fromDate toDate)
+            app.Logger.LogInformation(
+                sprintf "Successfully initialized ENTSO-E client, getting data from date %A to %A" fromDate toDate
+            ))
         |> EntsoE.getDayAheadPrices (fromDate, toDate)
-        |> tap (fun _ -> printfn "Successfully got ENTSO-E data from %A to %A" fromDate toDate)
+        |> tap (fun _ ->
+            app.Logger.LogInformation(sprintf "Successfully got ENTSO-E data from %A to %A" fromDate toDate))
         |> unwrap
         |> ElectricitySpotPrice.fromEntsoETransmissionDayAheadPricesResponse
         |> List.filter (fun x -> x.Time >= fromDate && x.Time <= toDate)
         |> tap (fun r ->
-            printfn "Successfully parsed data from ENTSO-E response:"
-            r |> List.iter (fun x -> printfn "%A" (x.ToString())))
+            app.Logger.LogInformation "Successfully parsed data from ENTSO-E response"
+            r |> List.iter (fun x -> app.Logger.LogDebug(sprintf "%A" (x.ToString()))))
         |> app.Repositories.ElectricitySpotPrice.Save
-        |> tap (fun _ -> printfn "Successfully saved data to database")
+        |> tap (fun _ -> app.Logger.LogInformation "Successfully saved data to database")
 
     let importFingrid (filePath: string) (app: App) =
         if not (IO.File.Exists filePath) then
@@ -124,7 +132,8 @@ module Main =
         else
             app.Fingrid
             |> Fingrid.parseNetEnergyConsumptionFromDatahubCsv (CsvFile.Load(filePath, ";"))
-            |> tap (fun _ -> printfn "Successfully parsed data from Fingrid CSV file %s" filePath)
+            |> tap (fun _ ->
+                app.Logger.LogInformation(sprintf "Successfully parsed data from Fingrid CSV file %s" filePath))
             |> List.map (fun reading ->
                 new HouseholdEnergyReading(
                     time = reading.Time,
@@ -132,11 +141,11 @@ module Main =
                     production = reading.Production
                 ))
             |> tap (fun r ->
-                printfn "Successfully parsed data from Fingrid response:"
-                r |> List.iter (fun x -> printfn "%A" (x.ToString())))
+                app.Logger.LogInformation "Successfully parsed data from Fingrid response"
+                r |> List.iter (fun x -> app.Logger.LogDebug(sprintf "%A" (x.ToString()))))
             |> app.Repositories.HouseholdEnergyReading.Save
             |> Ok
 
     let generateReport (app: App) =
         app.Repositories.Reports.SolarEnergySavingsReport
-        |> tap (List.iter (fun x -> printfn "%A" x))
+        |> tap (List.iter (fun x -> app.Logger.LogDebug(sprintf "%A" x)))

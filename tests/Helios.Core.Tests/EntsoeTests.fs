@@ -1,7 +1,6 @@
 module EntsoETests
 
 open Xunit
-open TestUtils
 open Helios.Core.Services
 open Helios.Core.Services.EntsoE.Types
 open System.Net.Http
@@ -9,6 +8,7 @@ open System.Net
 open System.Text
 open Moq
 open System
+open Helios.Core.Logger
 
 module internal DataMocks =
     let DayAheadPricesResponse =
@@ -116,7 +116,7 @@ let ``getDayAheadPrices should return TimeSeriesPeriod list parsed from returned
             (DateTimeOffset.Parse("2023-03-25T23:00Z"), (DateTimeOffset.Parse("2023-03-27T22:00Z")))
             (EntsoE.init
                 { HttpClient = mock.Object
-                  Logger = new MockLogger()
+                  Logger = createLogger (new HeliosLoggerProvider(LoggerOptions.None))
                   SecurityToken = "test" })
 
     // Assert

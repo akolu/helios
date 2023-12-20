@@ -1,15 +1,13 @@
 module Helios.Core.Repository
 
-open Microsoft.FSharp.Linq
 open Helios.Core.Models.SolarPanelOutput
 open Helios.Core.Models.HouseholdEnergyReading
 open Helios.Core.Database
 open Helios.Core.Models.ElectricitySpotPrice
 open System
-open Microsoft.EntityFrameworkCore
-open System.Data
+open Microsoft.Extensions.Logging
 
-type SolarPanelOutputRepository(db: HeliosDatabaseContext) =
+type SolarPanelOutputRepository(db: HeliosDatabaseContext, logger: ILogger) =
     member _.Find(startDate, endDate) =
         db.SolarPanelOutputs
         |> Seq.filter (fun m -> m.Time >= startDate && m.Time <= endDate)
@@ -26,12 +24,13 @@ type SolarPanelOutputRepository(db: HeliosDatabaseContext) =
             |> List.partition (fun row -> existingMeasurements |> List.exists (fun m -> row.Time = m.Time))
 
         existingRows
-        |> List.iter (fun row -> printfn "Warning: SolarPanelOutput %s already exists, ignoring" (row.ToString()))
+        |> List.iter (fun row ->
+            logger.LogWarning(sprintf "Warning: SolarPanelOutput %s already exists, ignoring" (row.ToString())))
 
         db.SolarPanelOutputs.AddRange(newRows)
         db.SaveChanges() |> ignore
 
-type ElectricitySpotPriceRepository(db: HeliosDatabaseContext) =
+type ElectricitySpotPriceRepository(db: HeliosDatabaseContext, logger: ILogger) =
     member _.Find(startDate, endDate) =
         db.ElectricitySpotPrices
         |> Seq.filter (fun m -> m.Time >= startDate && m.Time <= endDate)
@@ -48,12 +47,13 @@ type ElectricitySpotPriceRepository(db: HeliosDatabaseContext) =
             |> List.partition (fun row -> existingPrices |> List.exists (fun m -> row.Time = m.Time))
 
         existingRows
-        |> List.iter (fun row -> printfn "Warning: ElectricitySpotPrice %s already exists, ignoring" (row.ToString()))
+        |> List.iter (fun row ->
+            logger.LogWarning(sprintf "Warning: ElectricitySpotPrice %s already exists, ignoring" (row.ToString())))
 
         db.ElectricitySpotPrices.AddRange(newRows)
         db.SaveChanges() |> ignore
 
-type HouseholdEnergyReadingRepository(db: HeliosDatabaseContext) =
+type HouseholdEnergyReadingRepository(db: HeliosDatabaseContext, logger: ILogger) =
     member _.Find(startDate, endDate) =
         db.HouseholdEnergyReadings
         |> Seq.filter (fun m -> m.Time >= startDate && m.Time <= endDate)
@@ -70,7 +70,8 @@ type HouseholdEnergyReadingRepository(db: HeliosDatabaseContext) =
             |> List.partition (fun row -> existingReadings |> List.exists (fun m -> row.Time = m.Time))
 
         existingRows
-        |> List.iter (fun row -> printfn "Warning: HouseholdEnergyReading %s already exists, ignoring" (row.ToString()))
+        |> List.iter (fun row ->
+            logger.LogWarning(sprintf "HouseholdEnergyReading %s already exists, ignoring" (row.ToString())))
 
         db.HouseholdEnergyReadings.AddRange(newRows)
         db.SaveChanges() |> ignore
@@ -97,7 +98,7 @@ type EnergySavingsReport =
       NetTotalAcc: decimal }
 
 
-type ReportsRepository(db: HeliosDatabaseContext) =
+type ReportsRepository(db: HeliosDatabaseContext, logger: ILogger) =
     member _.SolarEnergySavingsReport =
         let fixedCosts = 5.62m + 2.79372m + 0.49m
 
@@ -164,8 +165,8 @@ type Repositories =
       ElectricitySpotPrice: ElectricitySpotPriceRepository
       Reports: ReportsRepository }
 
-    static member Init(db: HeliosDatabaseContext) =
-        { SolarPanelOutput = new SolarPanelOutputRepository(db)
-          HouseholdEnergyReading = new HouseholdEnergyReadingRepository(db)
-          ElectricitySpotPrice = new ElectricitySpotPriceRepository(db)
-          Reports = new ReportsRepository(db) }
+    static member Init(db: HeliosDatabaseContext, logger: ILogger) =
+        { SolarPanelOutput = new SolarPanelOutputRepository(db, logger)
+          HouseholdEnergyReading = new HouseholdEnergyReadingRepository(db, logger)
+          ElectricitySpotPrice = new ElectricitySpotPriceRepository(db, logger)
+          Reports = new ReportsRepository(db, logger) }

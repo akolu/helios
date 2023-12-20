@@ -4,8 +4,8 @@ open Xunit
 open Helios.Core.Services
 open Helios.Core.Services.Fingrid
 open FSharp.Data
-open TestUtils
 open System
+open Helios.Core.Logger
 
 let TOLERANCE = 0.000001
 
@@ -38,7 +38,7 @@ let ``parseNetEnergyConsumptionFromDatahubCsv parses csv and calculates net ener
         Fingrid.parseNetEnergyConsumptionFromDatahubCsv
             (CsvFile.Parse(csvString, ";"))
             (Fingrid.init
-                { Logger = MockLogger()
+                { Logger = createLogger (new HeliosLoggerProvider(LoggerOptions.None))
                   SiteIdentifiers =
                     { Production = "12345"
                       Consumption = "98765" } })

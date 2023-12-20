@@ -4,6 +4,7 @@ open Helios.Core.Utils
 open Helios.Core.Logger
 open System
 open System.Xml.Linq
+open Microsoft.Extensions.Logging
 
 module Constants =
     let API_URL = "https://web-api.tp.entsoe.eu/api"
