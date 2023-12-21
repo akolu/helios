@@ -12,6 +12,9 @@ type HouseholdEnergyReading(time: DateTimeOffset, production: double, consumptio
     override this.ToString() =
         sprintf "HouseholdEnergyReading(%A, %A, %A)" this.Time this.Production this.Consumption
 
+    interface ITimeSeries with
+        member this.Time = this.Time
+
     override this.Equals(other) =
         match other with
         | :? HouseholdEnergyReading as other ->

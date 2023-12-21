@@ -5,6 +5,7 @@ open Helios.Core.Services.FusionSolar.Types
 open System
 
 type SolarPanelOutput(time: DateTimeOffset, kwh: double) =
+
     member val Time = time with get, set
 
     member val Kwh = kwh with get, set
@@ -18,6 +19,9 @@ type SolarPanelOutput(time: DateTimeOffset, kwh: double) =
         | _ -> false
 
     override this.GetHashCode() = HashCode.Combine(this.Time, this.Kwh)
+
+    interface ITimeSeries with
+        member this.Time = this.Time
 
     static member fromFusionSolarResponse(responseBody: GetHourlyData.ResponseBody) : SolarPanelOutput list =
         responseBody.data

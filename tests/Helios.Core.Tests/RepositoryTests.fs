@@ -11,7 +11,7 @@ open Helios.Core.Logger
 
 type RepositoryTests() =
     let mutable dbContext: Option<HeliosDatabaseContext> = None
-    let mutable repository: Option<SolarPanelOutputRepository> = None
+    let mutable repositories: Option<Repositories> = None
 
     let mockLogger = createLogger (new HeliosLoggerProvider(LoggerOptions.None))
 
@@ -23,7 +23,7 @@ type RepositoryTests() =
 
     do
         dbContext <- Some(serviceProvider.GetService<HeliosDatabaseContext>())
-        repository <- Some(new SolarPanelOutputRepository(dbContext.Value, mockLogger))
+        repositories <- Some(Repositories.Init(dbContext.Value, mockLogger))
 
     interface IDisposable with
         member _.Dispose() =
@@ -32,13 +32,12 @@ type RepositoryTests() =
             | None -> ()
 
             dbContext <- None
-            repository <- None
+            repositories <- None
 
     [<Fact>]
     member _.``New SolarPanelOutputs can be added to the database``() =
         // Arrange
-        let repository: SolarPanelOutputRepository =
-            new SolarPanelOutputRepository(dbContext.Value, mockLogger)
+        let repository = repositories.Value.SolarPanelOutput
 
         let measurements =
             [ SolarPanelOutput(time = DateTimeOffset.Parse("2020-01-01"), kwh = 100.0)
@@ -58,8 +57,7 @@ type RepositoryTests() =
     [<Fact>]
     member _.``Duplicate SolarPanelOutputs will be ignored``() =
         // Arrange
-        let repository: SolarPanelOutputRepository =
-            new SolarPanelOutputRepository(dbContext.Value, mockLogger)
+        let repository = repositories.Value.SolarPanelOutput
 
         let measurements =
             [ SolarPanelOutput(time = DateTimeOffset.Parse("2020-01-01"), kwh = 100.0)
@@ -80,8 +78,7 @@ type RepositoryTests() =
     [<Fact>]
     member _.``SolarPanelOutputs can be read from the database, filtered by date``() =
         // Arrange
-        let repository: SolarPanelOutputRepository =
-            new SolarPanelOutputRepository(dbContext.Value, mockLogger)
+        let repository = repositories.Value.SolarPanelOutput
 
         let measurements =
             [ SolarPanelOutput(time = DateTimeOffset.Parse("2020-01-01"), kwh = 10.0)

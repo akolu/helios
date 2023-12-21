@@ -13,6 +13,7 @@
     <Compile Include="Services/FusionSolar.fs" />
     <Compile Include="Services/EntsoE.fs" />
     <Compile Include="Services/Fingrid.fs" />
+    <Compile Include="Models/ITimeSeries.fs" />
     <Compile Include="Models/ElectricitySpotPrice.fs" />
     <Compile Include="Models/SolarPanelOutput.fs" />
     <Compile Include="Models/HouseholdEnergyReading.fs" />

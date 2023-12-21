@@ -5,6 +5,7 @@ open System
 open Helios.Core.Utils
 
 type ElectricitySpotPrice(time: DateTimeOffset, euroCentsPerKWh: decimal) =
+
     member val Time = time with get, set
 
     member val EuroCentsPerKWh = euroCentsPerKWh with get, set
@@ -19,6 +20,9 @@ type ElectricitySpotPrice(time: DateTimeOffset, euroCentsPerKWh: decimal) =
 
     override this.GetHashCode() =
         HashCode.Combine(this.Time, this.EuroCentsPerKWh)
+
+    interface ITimeSeries with
+        member this.Time = this.Time
 
 let private validateTimeSeries (data: TimeSeriesPeriod) (prices: ElectricitySpotPrice list) =
     let hoursDifference =

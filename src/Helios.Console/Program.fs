@@ -30,7 +30,7 @@ let rec mainLoop state =
                             ctx.Refresh()
 
                             if i < diff then
-                                Thread.Sleep(1 * 60 * 1000) // 15 minutes
+                                Thread.Sleep(10 * 60 * 1000)
                 )
 
         | EntsoE -> state.App |> importEntsoE (askDate "Date from: ", askDate "Date to: ")
