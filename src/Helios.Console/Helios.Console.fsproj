@@ -8,7 +8,6 @@
 
   <ItemGroup>
     <Compile Include="ConsoleUI.fs" />
-    <Compile Include="Services.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

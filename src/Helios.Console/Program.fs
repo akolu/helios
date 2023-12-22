@@ -3,8 +3,11 @@ open Helios.Console.ConsoleUI.Commands
 open Helios.Console.ConsoleUI.UI
 open Spectre.Console
 open System.Threading
+open Microsoft.Extensions.Logging
 
 type State = { App: App }
+
+let LOG_LEVEL = LogLevel.Information
 
 let rec mainLoop state =
     match mainPrompt () with
@@ -40,7 +43,19 @@ let rec mainLoop state =
             | Some csvPath -> state.App.Services.Fingrid.Import csvPath |> ignore
 
         mainLoop (state)
-    | Export -> state.App.Services.Reporting.generateReport |> ignore
+    | GenerateReport ->
+        let report = state.App.Services.Reporting.EnergySavings()
+
+        match report |> List.rev |> List.tryHead with
+        | Some data ->
+            AnsiConsole.MarkupLine(sprintf "[bold]First reading:[/] [green]%O[/]" report.Head.Time)
+            AnsiConsole.MarkupLine(sprintf "[bold]Last reading:[/] [green]%O[/]" data.Time)
+            AnsiConsole.MarkupLine(sprintf "[bold]Savings:[/] [green]%.2f[/] €" data.SavingsAcc)
+            AnsiConsole.MarkupLine(sprintf "[bold]Sold to grid:[/] [green]%.2f[/] €" data.SoldToGridAcc)
+            AnsiConsole.MarkupLine(sprintf "[bold]Net total:[/] [green]%.2f[/] €" data.NetTotalAcc)
+        | None -> AnsiConsole.MarkupLine("[red]No data found[/]")
+
+        mainLoop (state)
     | Quit ->
         let confirm = AnsiConsole.Confirm("Are you sure you want to quit?")
         if confirm then () else mainLoop (state)
@@ -51,8 +66,8 @@ let main argv =
 
     let helios =
         match argv with
-        | [| dbPath |] -> App.Init(dbPath)
-        | _ -> App.Init()
+        | [| dbPath |] -> App.Init(LOG_LEVEL, dbPath)
+        | _ -> App.Init(LOG_LEVEL)
 
     mainLoop ({ App = helios })
     0

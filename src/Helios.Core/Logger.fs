@@ -20,14 +20,14 @@ type LoggerOptions =
           Level = LogLevel.None }
 
 type HeliosLoggerProvider(?opts: LoggerOptions) =
+    let options = defaultArg opts LoggerOptions.Default
+
+    member _.LogLevel = options.Level
+
     interface ILoggerProvider with
-
         member _.CreateLogger(categoryName) =
-            let options = defaultArg opts LoggerOptions.Default
-
             { new ILogger with
                 member _.BeginScope<'TState>(state: 'TState) = new NoOpDisposable() :> IDisposable
-
                 member _.IsEnabled(logLevel) = logLevel >= options.Level
 
                 member _.Log<'TState>(logLevel, eventId, state: 'TState, ex, formatter) =
@@ -35,11 +35,11 @@ type HeliosLoggerProvider(?opts: LoggerOptions) =
 
         member _.Dispose() = ()
 
-let createLogger (provider: ILoggerProvider) =
+let createLogger (provider: HeliosLoggerProvider) =
     LoggerFactory
         .Create(fun builder ->
             builder
-                .AddFilter(fun (category: string) (level: LogLevel) -> level >= LogLevel.Debug)
-                .AddProvider(provider)
+                .AddFilter(fun (category: string) (level: LogLevel) -> level >= provider.LogLevel)
+                .AddProvider(provider :> ILoggerProvider)
             |> ignore)
         .CreateLogger("HeliosLogger")

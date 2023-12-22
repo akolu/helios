@@ -54,10 +54,17 @@ module Main =
     type App =
         { Services: Services }
 
-        static member Init(?dbPath) =
-            let dbContext = initDbContext (defaultArg dbPath "Helios.sqlite")
-            let configuration = initConfiguration ()
-            let logger = createLogger (new HeliosLoggerProvider())
-            let repositories = Repositories.Init(dbContext, logger)
+        static member Init(logLevel: LogLevel, ?dbPath) =
+            let logger =
+                createLogger (
+                    new HeliosLoggerProvider(
+                        { LoggerOptions.Default with
+                            Level = logLevel }
+                    )
+                )
 
-            { Services = Services.Init(repositories, logger, configuration) }
+            let dbContext = initDbContext (defaultArg dbPath "Helios.sqlite")
+            let repos = Repositories.Init(dbContext, logger)
+            let config = initConfiguration ()
+
+            { Services = Services.Init(repos, logger, config) }

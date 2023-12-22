@@ -7,7 +7,7 @@ open System
 module Commands =
     type Main =
         | Import
-        | Export
+        | GenerateReport
         | Quit
 
     type Import =
@@ -20,7 +20,7 @@ module Commands =
 
         SelectionPrompt<Main>()
         |> tap (fun p -> p.Title <- "Please choose a command: ")
-        |> fun p -> p.AddChoices [ Import; Export; Quit ]
+        |> fun p -> p.AddChoices [ Import; GenerateReport; Quit ]
         |> AnsiConsole.Prompt
 
     let importPrompt () =
@@ -80,11 +80,3 @@ module UI =
             |> ignore)
         |> AnsiConsole.Write
         |> AnsiConsole.WriteLine
-
-    let eventLog (events: (DateTime * string) list) =
-        events
-        |> takeLast 5
-        |> List.map (fun (k, v) -> "[blue]" + k.ToString("HH\:mm\:ss") + "[/] ~ " + v)
-        |> List.iter AnsiConsole.MarkupLine
-
-        AnsiConsole.WriteLine()
