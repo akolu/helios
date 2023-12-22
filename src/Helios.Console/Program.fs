@@ -48,8 +48,8 @@ let rec mainLoop state =
 
         match report |> List.rev |> List.tryHead with
         | Some data ->
-            AnsiConsole.MarkupLine(sprintf "[bold]First reading:[/] [green]%O[/]" report.Head.Time)
-            AnsiConsole.MarkupLine(sprintf "[bold]Last reading:[/] [green]%O[/]" data.Time)
+            AnsiConsole.MarkupLine(sprintf "[bold]First reading:[/] [green]%O[/]" report.Head.Time.LocalDateTime)
+            AnsiConsole.MarkupLine(sprintf "[bold]Last reading:[/] [green]%O[/]" data.Time.LocalDateTime)
             AnsiConsole.MarkupLine(sprintf "[bold]Savings:[/] [green]%.2f[/] €" data.SavingsAcc)
             AnsiConsole.MarkupLine(sprintf "[bold]Sold to grid:[/] [green]%.2f[/] €" data.SoldToGridAcc)
             AnsiConsole.MarkupLine(sprintf "[bold]Net total:[/] [green]%.2f[/] €" data.NetTotalAcc)
