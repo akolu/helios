@@ -1,6 +1,6 @@
 module Helios.Core.Models.ElectricitySpotPrice
 
-open Helios.Core.Services.EntsoE.Types
+open Helios.Core.DataProviders.ApiClients.EntsoEClient.Types
 open System
 open Helios.Core.Utils
 

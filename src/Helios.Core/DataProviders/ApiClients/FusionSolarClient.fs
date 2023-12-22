@@ -1,7 +1,7 @@
-module Helios.Core.Services.FusionSolar
+module Helios.Core.DataProviders.ApiClients.FusionSolarClient
 
 open Helios.Core.Utils
-open Helios.Core.Logger
+open Helios.Core.HttpHandler
 open Microsoft.Extensions.Logging
 
 module Constants =
@@ -79,9 +79,11 @@ type Config =
       UserName: string
       SystemCode: string }
 
-type FusionSolar = { IsLoggedIn: bool; Config: Config }
+type FusionSolar =
+    { IsLoggedIn: bool
+      Config: Config }
 
-let init (config: Config) = { IsLoggedIn = false; Config = config }
+    static member Init(config: Config) = { IsLoggedIn = false; Config = config }
 
 let private login (this: FusionSolar) =
     match

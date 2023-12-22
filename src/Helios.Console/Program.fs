@@ -25,7 +25,7 @@ let rec mainLoop state =
 
                         for i in 0..diff do
                             let date = dateFrom.AddDays(float i)
-                            state.App |> importFusionSolar date
+                            state.App.Services.FusionSolar.Import date
                             ctx.Status <- (sprintf "Importing FusionSolar: %O (%d/%d)" date (i + 1) (diff + 1))
                             ctx.Refresh()
 
@@ -33,14 +33,14 @@ let rec mainLoop state =
                                 Thread.Sleep(10 * 60 * 1000)
                 )
 
-        | EntsoE -> state.App |> importEntsoE (askDate "Date from: ", askDate "Date to: ")
+        | EntsoE -> state.App.Services.EntsoE.Import(askDate "Date from: ", askDate "Date to: ")
         | Fingrid ->
             match csvPrompt with
             | None -> AnsiConsole.MarkupLine("[red]No CSV files found in the current directory[/]")
-            | Some csvPath -> state.App |> importFingrid csvPath |> ignore
+            | Some csvPath -> state.App.Services.Fingrid.Import csvPath |> ignore
 
         mainLoop (state)
-    | Export -> state.App |> generateReport |> ignore
+    | Export -> state.App.Services.Reporting.generateReport |> ignore
     | Quit ->
         let confirm = AnsiConsole.Confirm("Are you sure you want to quit?")
         if confirm then () else mainLoop (state)

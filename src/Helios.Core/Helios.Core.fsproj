@@ -8,17 +8,22 @@
 
   <ItemGroup>
     <Compile Include="Utils.fs" />
+    <Compile Include="HttpHandler.fs" />
     <Compile Include="Logger.fs" />
-    <Compile Include="Services/HttpHandler.fs" />
-    <Compile Include="Services/FusionSolar.fs" />
-    <Compile Include="Services/EntsoE.fs" />
-    <Compile Include="Services/Fingrid.fs" />
-    <Compile Include="Models/ITimeSeries.fs" />
+    <Compile Include="DataProviders/ApiClients/FusionSolarClient.fs" />
+    <Compile Include="DataProviders/ApiClients/EntsoEClient.fs" />
+    <Compile Include="DataProviders/CsvParsers/FingridParser.fs" />
+    <Compile Include="Models/ITimeSeries.fs" /> 
     <Compile Include="Models/ElectricitySpotPrice.fs" />
     <Compile Include="Models/SolarPanelOutput.fs" />
     <Compile Include="Models/HouseholdEnergyReading.fs" />
     <Compile Include="Database.fs" />
     <Compile Include="Repository.fs" /> 
+    <Compile Include="Services/Import/FusionSolar.fs" />
+    <Compile Include="Services/Import/EntsoE.fs" />
+    <Compile Include="Services/Import/Fingrid.fs" />
+    <Compile Include="Services/Reporting.fs" />
+    <Compile Include="Services/Services.fs" />
     <Compile Include="App.fs" />
   </ItemGroup>
 

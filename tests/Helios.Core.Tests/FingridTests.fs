@@ -1,8 +1,7 @@
 module FingridTests
 
 open Xunit
-open Helios.Core.Services
-open Helios.Core.Services.Fingrid
+open Helios.Core.DataProviders.CsvParsers.FingridParser
 open FSharp.Data
 open System
 open Helios.Core.Logger
@@ -35,15 +34,15 @@ Mittauspisteen tunnus;Tuotteen tyyppi;Resoluutio;Yksikkötyyppi;Lukeman tyyppi;A
 [<Fact>]
 let ``parseNetEnergyConsumptionFromDatahubCsv parses csv and calculates net energy consumption by time`` () =
     let result =
-        Fingrid.parseNetEnergyConsumptionFromDatahubCsv
+        parseNetEnergyConsumptionFromDatahubCsv
             (CsvFile.Parse(csvString, ";"))
-            (Fingrid.init
+            (Fingrid.Init
                 { Logger = createLogger (new HeliosLoggerProvider(LoggerOptions.None))
                   SiteIdentifiers =
                     { Production = "12345"
                       Consumption = "98765" } })
 
-    let expected =
+    let expected: FingridReading list =
         [ { Time = DateTimeOffset.Parse("2023-09-23T08:00:00Z")
             Consumption = 0.174
             Production = 0.023 }

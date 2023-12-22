@@ -1,14 +1,15 @@
 module EntsoETests
 
 open Xunit
-open Helios.Core.Services
-open Helios.Core.Services.EntsoE.Types
+open Helios.Core.DataProviders.ApiClients.EntsoEClient
+open Helios.Core.DataProviders.ApiClients.EntsoEClient.Types
 open System.Net.Http
 open System.Net
 open System.Text
 open Moq
 open System
 open Helios.Core.Logger
+open Helios.Core.HttpHandler
 
 module internal DataMocks =
     let DayAheadPricesResponse =
@@ -104,7 +105,7 @@ let mockHttpClientWithResponse (responses: Map<string, Result<HttpResponseMessag
 let ``getDayAheadPrices should return TimeSeriesPeriod list parsed from returned XML`` () =
     // Arrange
     let apiUrl =
-        EntsoE.Constants.API_URL
+        Constants.API_URL
         + "?documentType=A44&in_Domain=10YFI-1--------U&out_Domain=10YFI-1--------U&securityToken=test&timeInterval=2023-03-25T23%3a00%3a00.0000000%2b00%3a00%2f2023-03-27T22%3a00%3a00.0000000%2b00%3a00"
 
     let mock =
@@ -112,9 +113,9 @@ let ``getDayAheadPrices should return TimeSeriesPeriod list parsed from returned
 
     // Act
     let result =
-        EntsoE.getDayAheadPrices
+        getDayAheadPrices
             (DateTimeOffset.Parse("2023-03-25T23:00Z"), (DateTimeOffset.Parse("2023-03-27T22:00Z")))
-            (EntsoE.init
+            (EntsoE.Init
                 { HttpClient = mock.Object
                   Logger = createLogger (new HeliosLoggerProvider(LoggerOptions.None))
                   SecurityToken = "test" })

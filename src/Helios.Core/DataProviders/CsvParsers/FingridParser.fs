@@ -1,6 +1,5 @@
-module Helios.Core.Services.Fingrid
+module Helios.Core.DataProviders.CsvParsers.FingridParser
 
-open Helios.Core.Logger
 open FSharp.Data
 open System
 open Helios.Core.Utils
@@ -24,9 +23,10 @@ type Config =
     { Logger: ILogger
       SiteIdentifiers: SiteType }
 
-type Fingrid = { Config: Config }
+type Fingrid =
+    { Config: Config }
 
-let init (config: Config) = { Config = config }
+    static member Init(config: Config) = { Config = config }
 
 let private parseEnergyConsumptionRow (row: CsvRow) =
     { SiteIdentifier = row.GetColumn("Mittauspisteen tunnus")

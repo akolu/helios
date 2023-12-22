@@ -1,13 +1,14 @@
 module FusionSolarTests
 
 open Xunit
-open Helios.Core.Services
+open Helios.Core.DataProviders.ApiClients.FusionSolarClient
+open Helios.Core.DataProviders.ApiClients.FusionSolarClient.Types
 open System.Net.Http
 open System.Net
 open System.Text
-open FusionSolar.Types
 open Moq
 open Helios.Core.Logger
+open Helios.Core.HttpHandler
 
 module internal DataMocks =
     let LoginSuccessResponse: Login.ResponseBody =
@@ -109,14 +110,14 @@ let mockLogger = createLogger (new HeliosLoggerProvider(LoggerOptions.None))
 [<Fact>]
 let ``Init function should initialize record with config data & isLoggedIn to false`` () =
     // Arrange
-    let config: FusionSolar.Config =
+    let config: Config =
         { HttpClient = new HttpHandler()
           Logger = mockLogger
           UserName = "testUser"
           SystemCode = "testSystem" }
 
     // Act
-    let result = FusionSolar.init config
+    let result = FusionSolar.Init config
 
     // Assert
     Assert.Equal(false, result.IsLoggedIn)
@@ -128,18 +129,18 @@ let ``getStations should call login first if isLoggedIn is false, should return 
     let mock =
         mockHttpClientWithResponse (
             Map.ofList
-                [ FusionSolar.EndpointUrls.Login, (Ok ResponseMocks.LoginSuccess)
-                  FusionSolar.EndpointUrls.GetStations, (Ok ResponseMocks.GetStationsSuccess) ]
+                [ EndpointUrls.Login, (Ok ResponseMocks.LoginSuccess)
+                  EndpointUrls.GetStations, (Ok ResponseMocks.GetStationsSuccess) ]
         )
 
     mock
-        .Setup(fun x -> x.SetAuthHeader(FusionSolar.Constants.XSRF_TOKEN_COOKIE_KEY, "mockXsrfToken"))
+        .Setup(fun x -> x.SetAuthHeader(Constants.XSRF_TOKEN_COOKIE_KEY, "mockXsrfToken"))
         .Verifiable()
 
     // Act
     let result =
-        FusionSolar.getStations (
-            FusionSolar.init
+        getStations (
+            FusionSolar.Init
                 { HttpClient = mock.Object
                   Logger = mockLogger
                   UserName = "test"
@@ -157,13 +158,11 @@ let ``getStations should call login first if isLoggedIn is false, should return 
 let ``getStations should not call login if isLoggedIn is true, should return stations response`` () =
     // Arrange
     let mock =
-        mockHttpClientWithResponse (
-            Map.ofList [ FusionSolar.EndpointUrls.GetStations, (Ok ResponseMocks.GetStationsSuccess) ]
-        )
+        mockHttpClientWithResponse (Map.ofList [ EndpointUrls.GetStations, (Ok ResponseMocks.GetStationsSuccess) ])
 
     // Act
     let result =
-        FusionSolar.getStations (
+        getStations (
             { IsLoggedIn = true
               Config =
                 { HttpClient = mock.Object
@@ -185,20 +184,20 @@ let ``getHourlyData should call login first if isLoggedIn is false, should retur
     let mock =
         mockHttpClientWithResponse (
             Map.ofList
-                [ FusionSolar.EndpointUrls.Login, (Ok ResponseMocks.LoginSuccess)
-                  FusionSolar.EndpointUrls.GetHourlyData, (Ok ResponseMocks.getHourlyDataSuccess) ]
+                [ EndpointUrls.Login, (Ok ResponseMocks.LoginSuccess)
+                  EndpointUrls.GetHourlyData, (Ok ResponseMocks.getHourlyDataSuccess) ]
         )
 
     mock
-        .Setup(fun x -> x.SetAuthHeader(FusionSolar.Constants.XSRF_TOKEN_COOKIE_KEY, "mockXsrfToken"))
+        .Setup(fun x -> x.SetAuthHeader(Constants.XSRF_TOKEN_COOKIE_KEY, "mockXsrfToken"))
         .Verifiable()
 
     // Act
     let result =
-        FusionSolar.getHourlyData
+        getHourlyData
             { stationCodes = "ABCD123"
               collectTime = 1L }
-            (FusionSolar.init
+            (FusionSolar.Init
                 { HttpClient = mock.Object
                   Logger = mockLogger
                   UserName = "test"
@@ -215,13 +214,11 @@ let ``getHourlyData should call login first if isLoggedIn is false, should retur
 let ``getHourlyData should not call login if isLoggedIn is true, should return hourly data response`` () =
     // Arrange
     let mock =
-        mockHttpClientWithResponse (
-            Map.ofList [ FusionSolar.EndpointUrls.GetHourlyData, (Ok ResponseMocks.getHourlyDataSuccess) ]
-        )
+        mockHttpClientWithResponse (Map.ofList [ EndpointUrls.GetHourlyData, (Ok ResponseMocks.getHourlyDataSuccess) ])
 
     // Act
     let result =
-        FusionSolar.getHourlyData
+        getHourlyData
             { stationCodes = "ABCD123"
               collectTime = 1L }
             { IsLoggedIn = true

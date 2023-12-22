@@ -1,13 +1,12 @@
-﻿namespace Helios.Core.Services
+﻿module Helios.Core.HttpHandler
 
 open System
+open System.Net.Http
 open System.Text
 open System.Text.Json
 open System.Web
-open System.Net.Http
-open System.Threading.Tasks
 open System.Xml.Linq
-
+open System.Threading.Tasks
 
 module HttpUtils =
     let toJsonStringContent (data: obj) =

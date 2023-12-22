@@ -4,13 +4,13 @@ open Moq
 open Moq.Protected
 open System.Net
 open System.Net.Http
-open Helios.Core.Services
+open Helios.Core.DataProviders.ApiClients
 open Xunit
 open System.Threading.Tasks
 open System.Threading
 open System.Text
 open Helios.Core.Utils
-open Helios.Core.Models
+open Helios.Core.HttpHandler
 
 let TEST_URL = "http://test.com/"
 
@@ -174,7 +174,7 @@ let ``parseJsonBody deserializes FusionSolar.GetHourlyData.ResponseBody correctl
     let responseMessage =
         new HttpResponseMessage(HttpStatusCode.OK, Content = new StringContent(data, Encoding.UTF8))
 
-    let expected: FusionSolar.Types.GetHourlyData.ResponseBody =
+    let expected: FusionSolarClient.Types.GetHourlyData.ResponseBody =
         { success = true
           failCode = 0
           ``params`` =
@@ -208,7 +208,7 @@ let ``parseJsonBody deserializes FusionSolar.GetHourlyData.ResponseBody correctl
                     theory_power = None
                     ongrid_power = None } } ] }
 
-    match HttpUtils.parseJsonBody<FusionSolar.Types.GetHourlyData.ResponseBody> (responseMessage) with
+    match HttpUtils.parseJsonBody<FusionSolarClient.Types.GetHourlyData.ResponseBody> (responseMessage) with
     | Ok responseBody -> Assert.Equal(responseBody, expected)
     | Error err -> Assert.True(false, err)
 

@@ -3,7 +3,7 @@ module SolarPanelOutputTests
 open Xunit
 open System
 open Helios.Core.Models.SolarPanelOutput
-open Helios.Core.Services.FusionSolar
+open Helios.Core.DataProviders.ApiClients.FusionSolarClient
 
 [<Fact>]
 let ``fromFusionSolarResponse should map response to SolarPanelOutput list`` () =

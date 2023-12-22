@@ -3,7 +3,7 @@ module ElectricitySpotPriceTests
 open Xunit
 open System
 open Helios.Core.Models.ElectricitySpotPrice
-open Helios.Core.Services.EntsoE.Types
+open Helios.Core.DataProviders.ApiClients.EntsoEClient.Types
 
 [<Fact>]
 let ``fromEntsoETransmissionDayAheadPricesResponse should map response to ElectricitySpotPrice list`` () =

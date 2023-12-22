@@ -1,7 +1,7 @@
-module Helios.Core.Services.EntsoE
+module Helios.Core.DataProviders.ApiClients.EntsoEClient
 
 open Helios.Core.Utils
-open Helios.Core.Logger
+open Helios.Core.HttpHandler
 open System
 open System.Xml.Linq
 open Microsoft.Extensions.Logging
@@ -28,9 +28,10 @@ type Config =
       Logger: ILogger
       SecurityToken: string }
 
-type EntsoE = { Config: Config }
+type EntsoE =
+    { Config: Config }
 
-let init (config: Config) = { Config = config }
+    static member Init(config: Config) = { Config = config }
 
 let private parseTimeInterval (ns: XNamespace) (element: XElement) =
     match Seq.tryHead (element.Descendants(ns + "timeInterval")) with

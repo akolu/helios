@@ -1,6 +1,6 @@
 module Helios.Core.Models.SolarPanelOutput
 
-open Helios.Core.Services.FusionSolar.Types
+open Helios.Core.DataProviders.ApiClients.FusionSolarClient.Types
 
 open System
 
