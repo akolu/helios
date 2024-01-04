@@ -1,8 +1,10 @@
 namespace Helios.Console.ConsoleUI
 
 open Spectre.Console
+open Spectre.Console.Rendering
 open Helios.Core.Utils
 open System
+
 
 module Commands =
     type Main =
@@ -63,20 +65,18 @@ module UI =
 
         FigletText(FigletFont.Load("kban.flf"), "Helios") |> AnsiConsole.Write
 
-    let serviceTable () =
-        Table()
+    let reportTable (columns: string[], render: 'T -> string list) (report: 'T list) =
+        Table().AddColumns(columns)
         |> tap (fun t ->
-            t.AddColumns
-                [| TableColumn("Service name")
-                   TableColumn("Row count")
-                   TableColumn("Latest event") |]
-            |> ignore)
-        |> tap (fun t -> t.Border <- TableBorder.Horizontal)
-        |> tap (fun t ->
-            t
-                .AddRow("FusionSolar", "foo")
-                .AddRow("ENTSO-E", "bar")
-                .AddRow("Fingrid Datahub", "baz")
-            |> ignore)
+            // apply table styles
+            t.Border <- TableBorder.SimpleHeavy
+            t.Columns.[0].Padding <- new Padding(4, 0)
+
+            report
+            |> List.iteri (fun i row ->
+                let styled (s: string) : IRenderable =
+                    Markup(if i % 2 = 0 then "[grey66]" + s + "[/]" else s)
+                // call render function, apply styles to every other row, convert to array
+                t.AddRow(render row |> List.map (fun txt -> styled txt) |> Array.ofList)
+                |> ignore))
         |> AnsiConsole.Write
-        |> AnsiConsole.WriteLine

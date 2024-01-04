@@ -33,7 +33,7 @@ let rec mainLoop state =
                             ctx.Refresh()
 
                             if i < diff then
-                                Thread.Sleep(10 * 60 * 1000)
+                                Thread.Sleep(1 * 60 * 1000)
                 )
 
         | EntsoE -> state.App.Services.EntsoE.Import(askDate "Date from: ", askDate "Date to: ")
@@ -44,16 +44,26 @@ let rec mainLoop state =
 
         mainLoop (state)
     | GenerateReport ->
-        let report = state.App.Services.Reporting.EnergySavings()
-
-        match report |> List.rev |> List.tryHead with
-        | Some data ->
-            AnsiConsole.MarkupLine(sprintf "[bold]First reading:[/] [green]%O[/]" report.Head.Time.LocalDateTime)
-            AnsiConsole.MarkupLine(sprintf "[bold]Last reading:[/] [green]%O[/]" data.Time.LocalDateTime)
-            AnsiConsole.MarkupLine(sprintf "[bold]Savings:[/] [green]%.2f[/] €" data.SavingsAcc)
-            AnsiConsole.MarkupLine(sprintf "[bold]Sold to grid:[/] [green]%.2f[/] €" data.SoldToGridAcc)
-            AnsiConsole.MarkupLine(sprintf "[bold]Net total:[/] [green]%.2f[/] €" data.NetTotalAcc)
-        | None -> AnsiConsole.MarkupLine("[red]No data found[/]")
+        state.App.Services.Reporting.EnergySavings()
+        |> reportTable (
+            [| "Time"
+               "Consumption"
+               "Production"
+               "Surplus"
+               "Spot price"
+               "Savings"
+               "Savings acc"
+               "Sold to grid" |],
+            (fun row ->
+                [ row.Time.LocalDateTime.ToString()
+                  row.Consumption.ToString("0.00")
+                  row.Production.ToString("0.00")
+                  row.Surplus.ToString("0.00")
+                  row.SpotPrice.ToString("0.00")
+                  row.Savings.ToString("0.00")
+                  row.SavingsAcc.ToString("0.00")
+                  row.SoldToGrid.ToString("0.00") ])
+        )
 
         mainLoop (state)
     | Quit ->
