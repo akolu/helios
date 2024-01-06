@@ -37,9 +37,6 @@ let private getTotalConsumption (siteIdentifiers: SiteType) (time: DateTimeOffse
     let getTotal siteType =
         rows
         |> Seq.filter (fun row -> row.SiteIdentifier = siteType)
-        |> tap (fun rows ->
-            if (Seq.length rows) = 0 then
-                failwithf "No rows found for site type %A. Did you forget to set environment variables?" siteType)
         |> Seq.sumBy (fun row -> row.KWh)
 
     { Time = time

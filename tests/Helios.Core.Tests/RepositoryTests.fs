@@ -8,6 +8,8 @@ open Microsoft.EntityFrameworkCore
 open Microsoft.Extensions.DependencyInjection
 open System
 open Helios.Core.Logger
+open Helios.Core.Models.ElectricitySpotPrice
+open Helios.Core.Models.HouseholdEnergyReading
 
 type RepositoryTests() =
     let mutable dbContext: Option<HeliosDatabaseContext> = None
@@ -101,3 +103,39 @@ type RepositoryTests() =
         Assert.Equal([| measurements.[0] |], result1)
         Assert.Equal([| measurements.[0]; measurements.[1] |], result2)
         Assert.Equal([||], noResults)
+
+    [<Fact>]
+    member _.``GetTimeSeriesData returns data that exists in all three tables``() =
+        dbContext.Value.SolarPanelOutputs.AddRange(
+            [ SolarPanelOutput(time = DateTimeOffset.Parse("2020-01-01"), kwh = 10.0)
+              SolarPanelOutput(time = DateTimeOffset.Parse("2020-01-02"), kwh = 20.0) ]
+        )
+        |> ignore
+
+        dbContext.Value.ElectricitySpotPrices.AddRange(
+            [ ElectricitySpotPrice(time = DateTimeOffset.Parse("2020-01-02"), euroCentsPerKWh = 0.2m)
+              ElectricitySpotPrice(time = DateTimeOffset.Parse("2020-01-03"), euroCentsPerKWh = 0.3m)
+              ElectricitySpotPrice(time = DateTimeOffset.Parse("2020-01-05"), euroCentsPerKWh = 0.5m) ]
+        )
+        |> ignore
+
+        dbContext.Value.HouseholdEnergyReadings.AddRange(
+            [ HouseholdEnergyReading(time = DateTimeOffset.Parse("2020-01-01"), consumption = 100.0, production = 11.0)
+              HouseholdEnergyReading(time = DateTimeOffset.Parse("2020-01-02"), consumption = 200.0, production = 22.0)
+              HouseholdEnergyReading(time = DateTimeOffset.Parse("2020-01-03"), consumption = 300.0, production = 33.0)
+              HouseholdEnergyReading(time = DateTimeOffset.Parse("2020-01-04"), consumption = 400.0, production = 44.0) ]
+        )
+        |> ignore
+
+        dbContext.Value.SaveChanges() |> ignore
+
+        let result = repositories.Value.Reports.GetEnergySavingsData
+
+        Assert.Equal<EnergySavingsData list>(
+            [ { Time = DateTimeOffset.Parse("2020-01-02")
+                KwhOutput = 20.0
+                Consumption = 200.0
+                Production = 22.0
+                Price = 0.2m } ],
+            result
+        )

@@ -32,15 +32,21 @@ type ModelRepository<'T when 'T :> ITimeSeries and 'T: not struct>
         dbSet.AddRange(newRows)
         db.SaveChanges() |> ignore
 
-type TimeSeriesData =
+type EnergySavingsData =
     { Time: DateTimeOffset
       KwhOutput: float
       Consumption: float
       Production: float
       Price: decimal }
 
+type EnergyConsumptionData =
+    { Time: DateTimeOffset
+      Consumption: float
+      Production: float
+      Price: decimal }
+
 type ReportsRepository(db: HeliosDatabaseContext) =
-    member _.GetTimeSeriesData =
+    member _.GetEnergySavingsData =
         query {
             for reading in db.HouseholdEnergyReadings do
                 join output in db.SolarPanelOutputs on (reading.Time = output.Time)
@@ -48,7 +54,20 @@ type ReportsRepository(db: HeliosDatabaseContext) =
 
                 select
                     { Time = reading.Time
-                      KwhOutput = output.Kwh
+                      KwhOutput = output.Kwh // TODO: modify so that non-existent KwhOutputs are treated as 0
+                      Consumption = reading.Consumption
+                      Production = reading.Production
+                      Price = spotPrice.EuroCentsPerKWh }
+        }
+        |> Seq.toList
+
+    member _.GetEnergyConsumptionData =
+        query {
+            for reading in db.HouseholdEnergyReadings do
+                join spotPrice in db.ElectricitySpotPrices on (reading.Time = spotPrice.Time)
+
+                select
+                    { Time = reading.Time
                       Consumption = reading.Consumption
                       Production = reading.Production
                       Price = spotPrice.EuroCentsPerKWh }

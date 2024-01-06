@@ -43,27 +43,48 @@ let rec mainLoop state =
             | Some csvPath -> state.App.Services.Fingrid.Import csvPath |> ignore
 
         mainLoop (state)
-    | GenerateReport ->
-        state.App.Services.Reporting.EnergySavings()
-        |> reportTable (
-            [| "Time"
-               "Consumption"
-               "Production"
-               "Surplus"
-               "Spot price"
-               "Savings"
-               "Savings acc"
-               "Sold to grid" |],
-            (fun row ->
-                [ row.Time.LocalDateTime.ToString()
-                  row.Consumption.ToString("0.00")
-                  row.Production.ToString("0.00")
-                  row.Surplus.ToString("0.00")
-                  row.SpotPrice.ToString("0.00")
-                  row.Savings.ToString("0.00")
-                  row.SavingsAcc.ToString("0.00")
-                  row.SoldToGrid.ToString("0.00") ])
-        )
+    | Report ->
+        match reportPrompt () with
+        | EnergySavings ->
+            state.App.Services.Reporting.EnergySavings()
+            |> reportTable (
+                [| "Time"
+                   "Consumption"
+                   "Production"
+                   "Surplus"
+                   "Spot price"
+                   "Savings"
+                   "Savings acc"
+                   "Sold to grid" |],
+                (fun row ->
+                    [ row.Time.LocalDateTime.ToString()
+                      row.Consumption.ToString("0.00")
+                      row.Production.ToString("0.00")
+                      row.Surplus.ToString("0.00")
+                      row.SpotPrice.ToString("0.00")
+                      row.Savings.ToString("0.00")
+                      row.SavingsAcc.ToString("0.00")
+                      row.SoldToGrid.ToString("0.00") ])
+            )
+        | EnergyConsumption ->
+            state.App.Services.Reporting.EnergyConsumption()
+            |> reportTable (
+                [| "Month/Year"
+                   "Net consumption"
+                   "Avg spot price"
+                   "Weighted avg"
+                   "Amount paid"
+                   "Transmission fee"
+                   "Net total" |],
+                (fun row ->
+                    [ row.Date.ToString()
+                      row.NetConsumption.ToString("0.00")
+                      row.AverageSpotPrice.ToString("0.00")
+                      row.WeightedPriceVat0.ToString("0.00")
+                      row.AmountPaid.ToString("0.00")
+                      row.TransmissionCosts.ToString("0.00")
+                      row.NetTotal.ToString("0.00") ])
+            )
 
         mainLoop (state)
     | Quit ->

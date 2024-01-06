@@ -9,7 +9,7 @@ open System
 module Commands =
     type Main =
         | Import
-        | GenerateReport
+        | Report
         | Quit
 
     type Import =
@@ -17,18 +17,28 @@ module Commands =
         | EntsoE
         | Fingrid
 
+    type Report =
+        | EnergySavings
+        | EnergyConsumption
+
     let mainPrompt () =
         AnsiConsole.WriteLine()
 
         SelectionPrompt<Main>()
         |> tap (fun p -> p.Title <- "Please choose a command: ")
-        |> fun p -> p.AddChoices [ Import; GenerateReport; Quit ]
+        |> fun p -> p.AddChoices [ Import; Report; Quit ]
         |> AnsiConsole.Prompt
 
     let importPrompt () =
         SelectionPrompt<Import>()
-        |> tap (fun p -> p.Title <- "Please select one or more items: ")
+        |> tap (fun p -> p.Title <- "Select data source: ")
         |> fun p -> p.AddChoices [ FusionSolar; EntsoE; Fingrid ]
+        |> AnsiConsole.Prompt
+
+    let reportPrompt () =
+        SelectionPrompt<Report>()
+        |> tap (fun p -> p.Title <- "Select report: ")
+        |> fun p -> p.AddChoices [ EnergySavings; EnergyConsumption ]
         |> AnsiConsole.Prompt
 
     let rec askDate text =
