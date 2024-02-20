@@ -4,6 +4,7 @@ open Helios.Console.ConsoleUI.UI
 open Spectre.Console
 open System.Threading
 open Microsoft.Extensions.Logging
+open System
 
 type State = { App: App }
 
@@ -14,8 +15,8 @@ let rec mainLoop state =
     | Import ->
         match importPrompt () with
         | FusionSolar ->
-            let dateFrom = askDate "Date from: "
-            let dateTo = askDate "Date to: "
+            let dateFrom = askDate "Date from " (state.App.Latest.FusionSolar.AddDays(1))
+            let dateTo = askDate "Date to " DateTimeOffset.Now
             let diff = (dateTo - dateFrom).Days
 
             AnsiConsole
@@ -36,7 +37,11 @@ let rec mainLoop state =
                                 Thread.Sleep(1 * 60 * 1000)
                 )
 
-        | EntsoE -> state.App.Services.EntsoE.Import(askDate "Date from: ", askDate "Date to: ")
+        | EntsoE ->
+            state.App.Services.EntsoE.Import(
+                askDate "Date from " (state.App.Latest.EntsoE.AddDays(1)),
+                askDate "Date to " DateTimeOffset.Now
+            )
         | Fingrid ->
             match csvPrompt with
             | None -> AnsiConsole.MarkupLine("[red]No CSV files found in the current directory[/]")
@@ -46,7 +51,10 @@ let rec mainLoop state =
     | Report ->
         match reportPrompt () with
         | EnergySavings ->
-            state.App.Services.Reporting.EnergySavings()
+            let dateFrom, dateTo, grouping =
+                askReportDateRange state.App.First.Fingrid state.App.Latest.Fingrid
+
+            state.App.Services.Reporting.EnergySavings(dateFrom.DateTime, dateTo.DateTime)
             |> reportTable (
                 [| "Time"
                    "Consumption"
@@ -67,21 +75,23 @@ let rec mainLoop state =
                       row.SoldToGrid.ToString("0.00") ])
             )
         | EnergyConsumption ->
-            state.App.Services.Reporting.EnergyConsumption()
+            state.App.Services.Reporting.EnergyConsumption(
+                askReportDateRange state.App.First.Fingrid state.App.Latest.Fingrid
+            )
             |> reportTable (
-                [| "Month/Year"
+                [| "Time period"
                    "Net consumption"
                    "Avg spot price"
                    "Weighted avg"
-                   "Amount paid"
-                   "Transmission fee"
+                   "Cost estimate"
+                   "Transmission"
                    "Net total" |],
                 (fun row ->
-                    [ row.Date.ToString()
+                    [ row.TimePeriod.ToString()
                       row.NetConsumption.ToString("0.00")
                       row.AverageSpotPrice.ToString("0.00")
                       row.WeightedPriceVat0.ToString("0.00")
-                      row.AmountPaid.ToString("0.00")
+                      row.CostEstimate.ToString("0.00")
                       row.TransmissionCosts.ToString("0.00")
                       row.NetTotal.ToString("0.00") ])
             )

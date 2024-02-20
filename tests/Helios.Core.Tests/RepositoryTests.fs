@@ -129,7 +129,8 @@ type RepositoryTests() =
 
         dbContext.Value.SaveChanges() |> ignore
 
-        let result = repositories.Value.Reports.GetEnergySavingsData
+        let result =
+            repositories.Value.Reports.GetEnergySavingsData(DateTime.Parse("2020-01-02"), DateTime.Parse("2020-01-05"))
 
         Assert.Equal<EnergySavingsData list>(
             [ { Time = DateTimeOffset.Parse("2020-01-02")

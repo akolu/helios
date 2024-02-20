@@ -33,23 +33,28 @@ type EnergySavingsReport =
           NetTotalAcc = 0.0m }
 
 type EnergyConsumptionReport =
-    { Date: string
+    { TimePeriod: string
       NetConsumption: float
       AverageSpotPrice: decimal
       WeightedPriceVat0: decimal
-      AmountPaid: decimal
+      CostEstimate: decimal
       TransmissionCosts: decimal
       NetTotal: decimal }
+
+type GroupBy =
+    | Day
+    | Month
+    | Year
 
 type Reporting =
     { repositories: Repositories
       config: IConfiguration
       logger: ILogger }
 
-    member this.EnergySavings() =
+    member this.EnergySavings(dateFrom, dateTo) =
         let fixedCosts = 5.62m + 2.79372m + 0.49m
 
-        this.repositories.Reports.GetEnergySavingsData
+        this.repositories.Reports.GetEnergySavingsData(dateFrom, dateTo)
         |> List.sortBy (fun row -> row.Time)
         |> List.fold
             (fun (acc: EnergySavingsReport list) (row: EnergySavingsData) ->
@@ -75,14 +80,26 @@ type Reporting =
             []
         |> tap (List.iter (fun x -> this.logger.LogDebug(sprintf "%A" x)))
 
-    member this.EnergyConsumption() =
-        this.repositories.Reports.GetEnergyConsumptionData
+
+    // TODO:
+    // - bugfix: figure out inconsistencies with billed invoice data (check that AmountPaid and TransmissionCosts match the corresponding invoices)
+    //    - take into account fixed prices (e.g. Transmission fees) changing over time -> Elenia price change in 5/2023
+    //    - manually double-check small (rounding?) errors in Excel after grouping feature is done
+    // - feat: add support for limiting the report by date range
+    // - feat: add support for grouping by day/month/year
+    // - refactor: move reports to separate files e.g. under Report folder
+    member this.EnergyConsumption(dateFrom: DateTimeOffset, dateTo: DateTimeOffset, groupBy: GroupBy) =
+        this.repositories.Reports.GetEnergyConsumptionData(dateFrom, dateTo)
         |> List.sortBy (fun row -> row.Time)
         |> List.groupBy (fun row ->
-            // need to group by local date, not UTC date
-            let localTime = row.Time.ToLocalTime()
-            localTime.Year, localTime.Month)
-        |> List.map (fun ((year, month), rows) ->
+            let localTime = DateTimeOffset.Parse(row.Time).ToLocalTime()
+
+            match groupBy with
+            | Day -> localTime.Date.ToShortDateString()
+            | Month -> localTime.Month.ToString() + "/" + localTime.Year.ToString()
+            | Year -> localTime.Year.ToString())
+        // need to group by local date, not UTC date
+        |> List.map (fun (timePeriod, rows) ->
 
             let totalConsumption =
                 rows |> List.sumBy (fun row -> Math.Max((row.Consumption - row.Production), 0))
@@ -99,19 +116,19 @@ type Reporting =
                 else
                     0.0m
 
-            let amountPaid =
+            let costEstimate =
                 (averagePriceVat0 * 1.24m + 0.49m) * decimal totalConsumption / 100.0m // add VAT 24% and fixed spot margin 0.49c/kWh
 
             let transmissionCosts =
                 (decimal totalConsumption * (5.62m + 2.79372m) / 100.0m) + 21.24m // transmission cost 5.62c/KWh + tax 2.79372c/KWh + fixed fee 21.24€/month
 
-            { Date = month.ToString() + "/" + year.ToString()
+            { TimePeriod = timePeriod
               NetConsumption = totalConsumption
               AverageSpotPrice = avgSpotPrice
               WeightedPriceVat0 = averagePriceVat0
-              AmountPaid = amountPaid
+              CostEstimate = costEstimate
               TransmissionCosts = transmissionCosts
-              NetTotal = amountPaid + transmissionCosts })
+              NetTotal = costEstimate + transmissionCosts })
 
     static member Init(repositories: Repositories, logger: ILogger, config: IConfiguration) =
         { repositories = repositories

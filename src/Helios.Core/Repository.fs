@@ -8,6 +8,8 @@ open System
 open Microsoft.Extensions.Logging
 open Microsoft.EntityFrameworkCore
 open Helios.Core.Models
+open Microsoft.Data.Sqlite
+open Dapper
 
 type ModelRepository<'T when 'T :> ITimeSeries and 'T: not struct>
     (db: HeliosDatabaseContext, dbSet: DbSet<'T>, logger: ILogger) =
@@ -15,6 +17,10 @@ type ModelRepository<'T when 'T :> ITimeSeries and 'T: not struct>
         dbSet
         |> Seq.filter (fun m -> let time = m.Time in time >= startDate && time <= endDate)
         |> Seq.toList
+
+    member _.FindLatest() = dbSet |> Seq.maxBy (fun m -> m.Time)
+
+    member _.FindFirst() = dbSet |> Seq.minBy (fun m -> m.Time)
 
     member _.Save(items: 'T list) =
         let existingItems =
@@ -39,18 +45,21 @@ type EnergySavingsData =
       Production: float
       Price: decimal }
 
+[<CLIMutable>]
 type EnergyConsumptionData =
-    { Time: DateTimeOffset
+    { Time: string
       Consumption: float
       Production: float
       Price: decimal }
 
 type ReportsRepository(db: HeliosDatabaseContext) =
-    member _.GetEnergySavingsData =
+    member _.GetEnergySavingsData(dateFrom: DateTime, dateTo: DateTime) =
         query {
             for reading in db.HouseholdEnergyReadings do
-                join output in db.SolarPanelOutputs on (reading.Time = output.Time)
-                join spotPrice in db.ElectricitySpotPrices on (reading.Time = spotPrice.Time)
+                join output in db.SolarPanelOutputs on (reading.Time.DateTime = output.Time.DateTime)
+                join spotPrice in db.ElectricitySpotPrices on (reading.Time.DateTime = spotPrice.Time.DateTime)
+
+                where (reading.Time.DateTime >= dateFrom && reading.Time.DateTime <= dateTo)
 
                 select
                     { Time = reading.Time
@@ -61,18 +70,22 @@ type ReportsRepository(db: HeliosDatabaseContext) =
         }
         |> Seq.toList
 
-    member _.GetEnergyConsumptionData =
-        query {
-            for reading in db.HouseholdEnergyReadings do
-                join spotPrice in db.ElectricitySpotPrices on (reading.Time = spotPrice.Time)
+    member _.GetEnergyConsumptionData(dateFrom: DateTimeOffset, dateTo: DateTimeOffset) =
+        using (new SqliteConnection("Data Source=Helios.sqlite")) (fun connection ->
+            let sql =
+                """
+                SELECT reading.Time, reading.Consumption, reading.Production, spotPrice.EuroCentsPerKWh AS Price
+                FROM HouseholdEnergyReadings reading
+                JOIN ElectricitySpotPrices spotPrice ON reading.Time = spotPrice.Time
+                WHERE reading.Time BETWEEN @From AND @To
+            """
 
-                select
-                    { Time = reading.Time
-                      Consumption = reading.Consumption
-                      Production = reading.Production
-                      Price = spotPrice.EuroCentsPerKWh }
-        }
-        |> Seq.toList
+            let parameters = new DynamicParameters()
+            parameters.Add("@From", dateFrom)
+            parameters.Add("@To", dateTo)
+
+            let results = connection.Query<EnergyConsumptionData>(sql, parameters)
+            results |> Seq.toList)
 
 type Repositories =
     { SolarPanelOutput: ModelRepository<SolarPanelOutput>
