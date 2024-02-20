@@ -41,15 +41,44 @@ module Commands =
         |> fun p -> p.AddChoices [ EnergySavings; EnergyConsumption ]
         |> AnsiConsole.Prompt
 
-    let rec askDate text =
-        let prompt = AnsiConsole.Ask<string>(text)
+    let rec askDate text (defaultDate: DateTimeOffset) =
+        let prompt =
+            TextPrompt<string>(text)
+            |> fun p -> p.DefaultValue(defaultDate.ToString("dd.MM.yyyy"))
+            |> AnsiConsole.Prompt
+
         let success, date = DateTimeOffset.TryParse(prompt)
 
         if success then
             date
         else
             AnsiConsole.MarkupLine("[red]Invalid Date. Input date in dd.MM.yyyy format[/]")
-            askDate text
+            askDate text defaultDate
+
+    let rec askReportGrouping () =
+        match
+            TextPrompt<string>("Group by [green]d[/]ay / [green]m[/]onth / [green]y[/]ear ")
+            |> fun p -> p.DefaultValue("m")
+            |> AnsiConsole.Prompt
+        with
+        | "d" -> Helios.Core.Services.Day
+        | "m" -> Helios.Core.Services.Month
+        | "y" -> Helios.Core.Services.Year
+        | _ ->
+            AnsiConsole.MarkupLine("[red]Invalid grouping. Please select [green]d[/] / [green]m[/] / [green]y[/][/]")
+
+            askReportGrouping ()
+
+    let rec askReportDateRange defaultFrom defaultTo =
+        let dateFrom = askDate "Date from " defaultFrom
+        let dateTo = askDate "Date to " defaultTo
+        let grouping = askReportGrouping ()
+
+        if dateFrom > dateTo then
+            AnsiConsole.MarkupLine("[red]Invalid Date range. Date from must be before date to[/]")
+            askReportDateRange defaultFrom defaultTo
+        else
+            (dateFrom, dateTo, grouping)
 
     let private listCsvFilesWithExtension =
         let exePath = Reflection.Assembly.GetExecutingAssembly().Location
