@@ -4,6 +4,7 @@ open Helios.Console.ConsoleUI.UI
 open Spectre.Console
 open System.Threading
 open Microsoft.Extensions.Logging
+open System
 
 type State = { App: App }
 
@@ -14,8 +15,8 @@ let rec mainLoop state =
     | Import ->
         match importPrompt () with
         | FusionSolar ->
-            let dateFrom = askDate "Date from: "
-            let dateTo = askDate "Date to: "
+            let dateFrom = askDate "Date from " (state.App.Latest.FusionSolar.AddDays(1))
+            let dateTo = askDate "Date to " DateTimeOffset.Now
             let diff = (dateTo - dateFrom).Days
 
             AnsiConsole
@@ -36,7 +37,11 @@ let rec mainLoop state =
                                 Thread.Sleep(1 * 60 * 1000)
                 )
 
-        | EntsoE -> state.App.Services.EntsoE.Import(askDate "Date from: ", askDate "Date to: ")
+        | EntsoE ->
+            state.App.Services.EntsoE.Import(
+                askDate "Date from " (state.App.Latest.EntsoE.AddDays(1)),
+                askDate "Date to " DateTimeOffset.Now
+            )
         | Fingrid ->
             match csvPrompt with
             | None -> AnsiConsole.MarkupLine("[red]No CSV files found in the current directory[/]")

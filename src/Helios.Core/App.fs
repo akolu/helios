@@ -52,7 +52,15 @@ module Main =
             .Build()
 
     type App =
-        { Services: Services }
+        { Services: Services
+          First:
+              {| FusionSolar: DateTimeOffset
+                 EntsoE: DateTimeOffset
+                 Fingrid: DateTimeOffset |}
+          Latest:
+              {| FusionSolar: DateTimeOffset
+                 EntsoE: DateTimeOffset
+                 Fingrid: DateTimeOffset |} }
 
         static member Init(logLevel: LogLevel, ?dbPath) =
             let logger =
@@ -67,4 +75,12 @@ module Main =
             let repos = Repositories.Init(dbContext, logger)
             let config = initConfiguration ()
 
-            { Services = Services.Init(repos, logger, config) }
+            { Services = Services.Init(repos, logger, config)
+              First =
+                {| FusionSolar = repos.SolarPanelOutput.FindFirst().Time
+                   EntsoE = repos.ElectricitySpotPrice.FindFirst().Time
+                   Fingrid = repos.HouseholdEnergyReading.FindFirst().Time |}
+              Latest =
+                {| FusionSolar = repos.SolarPanelOutput.FindLatest().Time
+                   EntsoE = repos.ElectricitySpotPrice.FindLatest().Time
+                   Fingrid = repos.HouseholdEnergyReading.FindLatest().Time |} }

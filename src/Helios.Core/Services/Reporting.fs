@@ -41,6 +41,11 @@ type EnergyConsumptionReport =
       TransmissionCosts: decimal
       NetTotal: decimal }
 
+type GroupBy =
+    | Day
+    | Month
+    | Year
+
 type Reporting =
     { repositories: Repositories
       config: IConfiguration

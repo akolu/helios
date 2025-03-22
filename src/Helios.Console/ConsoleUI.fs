@@ -41,15 +41,19 @@ module Commands =
         |> fun p -> p.AddChoices [ EnergySavings; EnergyConsumption ]
         |> AnsiConsole.Prompt
 
-    let rec askDate text =
-        let prompt = AnsiConsole.Ask<string>(text)
+    let rec askDate text (defaultDate: DateTimeOffset) =
+        let prompt =
+            TextPrompt<string>(text)
+            |> fun p -> p.DefaultValue(defaultDate.ToString("dd.MM.yyyy"))
+            |> AnsiConsole.Prompt
+
         let success, date = DateTimeOffset.TryParse(prompt)
 
         if success then
             date
         else
             AnsiConsole.MarkupLine("[red]Invalid Date. Input date in dd.MM.yyyy format[/]")
-            askDate text
+            askDate text defaultDate
 
     let private listCsvFilesWithExtension =
         let exePath = Reflection.Assembly.GetExecutingAssembly().Location

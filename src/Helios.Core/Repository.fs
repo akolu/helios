@@ -16,6 +16,11 @@ type ModelRepository<'T when 'T :> ITimeSeries and 'T: not struct>
         |> Seq.filter (fun m -> let time = m.Time in time >= startDate && time <= endDate)
         |> Seq.toList
 
+    member _.FindLatest() = dbSet |> Seq.maxBy (fun m -> m.Time)
+
+    member _.FindFirst() = dbSet |> Seq.minBy (fun m -> m.Time)
+
+
     member _.Save(items: 'T list) =
         let existingItems =
             dbSet
