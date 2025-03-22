@@ -23,7 +23,7 @@ type EntsoEImport =
         |> tap (fun _ ->
             this.logger.LogInformation(sprintf "Successfully got ENTSO-E data from %A to %A" fromDate toDate))
         |> unwrap
-        |> ElectricitySpotPrice.fromEntsoETransmissionDayAheadPricesResponse
+        |> ElectricitySpotPrice.fromEntsoETransmissionDayAheadPricesResponse this.logger
         |> List.filter (fun x -> x.Time >= fromDate && x.Time <= toDate)
         |> tap (fun r ->
             this.logger.LogInformation "Successfully parsed data from ENTSO-E response"

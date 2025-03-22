@@ -2,7 +2,7 @@ module Helios.Core.Models.ElectricitySpotPrice
 
 open Helios.Core.DataProviders.ApiClients.EntsoEClient.Types
 open System
-open Helios.Core.Utils
+open Microsoft.Extensions.Logging
 
 type ElectricitySpotPrice(time: DateTimeOffset, euroCentsPerKWh: decimal) =
 
@@ -24,29 +24,48 @@ type ElectricitySpotPrice(time: DateTimeOffset, euroCentsPerKWh: decimal) =
     interface ITimeSeries with
         member this.Time = this.Time
 
-let private validateTimeSeries (data: TimeSeriesPeriod) (prices: ElectricitySpotPrice list) =
-    let hoursDifference =
-        (data.TimeInterval.EndDt - data.TimeInterval.StartDt).TotalHours
+let private validateDataIntegrity (logger: ILogger) (data: TimeSeriesPeriod) =
+    let expectedHours =
+        int (data.TimeInterval.EndDt - data.TimeInterval.StartDt).TotalHours
 
-    if float (List.length prices) <> hoursDifference then
-        failwith (
-            sprintf
-                "Inconsistent time series in time interval %A: number of points does not match time interval. Expected: %s, actual: %s"
-                data.TimeInterval
-                (string hoursDifference)
-                (string (List.length prices))
-        )
+    if expectedHours = List.length data.Points then
+        data
+    else
+        let points: TimeSeriesPoint list =
+            [ 1..expectedHours ]
+            |> List.fold
+                (fun acc pos ->
+                    match List.tryFind (fun p -> p.Position = pos) data.Points with
+                    | Some point -> acc @ [ point ]
+                    | None ->
+                        let latest = List.last acc
+
+                        logger.LogWarning(
+                            "Missing data for {Position}. Using last available value {LastAvailableValue}.",
+                            data.TimeInterval.StartDt
+                                .AddHours(double (pos - 1))
+                                .ToString("dd.MM.yyyy HH:mm:ss"),
+                            latest.PriceAmount
+                        )
+
+                        acc @ [ { latest with Position = pos } ])
+                []
+
+        { data with Points = points }
 
 let private eurPerMWhToEuroCentsPerKWh (eurPerMWh: decimal) = eurPerMWh * 100m / 1000m
 
-let fromEntsoETransmissionDayAheadPricesResponse (timeSeries: TimeSeriesPeriod list) : ElectricitySpotPrice list =
+let fromEntsoETransmissionDayAheadPricesResponse
+    (logger: ILogger)
+    (timeSeries: TimeSeriesPeriod list)
+    : ElectricitySpotPrice list =
     timeSeries
+    |> List.map (validateDataIntegrity logger)
     |> List.map (fun data ->
         data.Points
         |> List.map (fun point ->
             new ElectricitySpotPrice(
                 time = data.TimeInterval.StartDt.AddHours(double (point.Position - 1)),
                 euroCentsPerKWh = eurPerMWhToEuroCentsPerKWh point.PriceAmount
-            ))
-        |> tap (validateTimeSeries data))
+            )))
     |> List.fold (fun acc x -> acc @ x) []
